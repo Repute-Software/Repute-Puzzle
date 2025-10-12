@@ -1,6 +1,6 @@
 services:
   puzzle:
-    image: ghcr.io/doubleutech@proton.me/puzzle:latest  # Replace doubleutech@proton.me with your GitHub username
+    image: ghcr.io/repute-software/repute-puzzle:latest
     container_name: sliding-puzzle
     ports:
       - "8080:8080"

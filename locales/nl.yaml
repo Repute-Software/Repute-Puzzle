@@ -20,7 +20,8 @@ modal:
 completion:
   title: "Jouw Kortingscode"
   save_info: "Bespaar {percent}% op je volgende aankoop!"
-  instruction: "Bewaar deze code of controleer je e-mail voor bevestiging."
+  instruction: "Bewaar deze code voor je aankoop."
+  email_sent: "Een bevestigingsmail is naar je inbox verzonden!"
   play_again: "Opnieuw Spelen"
   
 error:

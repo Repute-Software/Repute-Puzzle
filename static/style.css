@@ -352,6 +352,110 @@ form .btn-success {
     }
 }
 
+/* Success result container */
+.completion-success-full {
+    animation: slideInUp 0.5s ease-out;
+    padding: 20px 0;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Discount code section */
+.discount-code-section {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.discount-code-section h3 {
+    color: #333;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+}
+
+.discount-code-display {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 25px;
+    border-radius: 12px;
+    margin: 20px 0;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+}
+
+.discount-code-display code {
+    font-size: 2rem;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.discount-info {
+    font-size: 1.2rem;
+    color: #667eea;
+    font-weight: 600;
+    margin: 10px 0;
+}
+
+/* Instructions section */
+.instructions-section {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 4px solid #667eea;
+}
+
+.instructions-section .save-info {
+    margin: 0;
+    color: #555;
+}
+
+/* Email success message */
+.email-success-message {
+    background: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: fadeIn 0.5s ease-in 0.3s both;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.email-success-message .success-icon {
+    font-size: 1.5rem;
+}
+
+.email-success-message p {
+    margin: 0;
+    font-weight: 500;
+}
+
+/* Actions section */
+.actions-section {
+    text-align: center;
+    margin-top: 20px;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .game-container {

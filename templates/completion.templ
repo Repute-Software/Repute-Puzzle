@@ -7,18 +7,34 @@ import (
 )
 
 templ CompletionSuccess(discountCode string, discountPercent int, t *models.Translations) {
-	<div class="completion-success">
-		<h3>{ t.Completion.Title }</h3>
-		<div class="discount-code">
-			<code>{ discountCode }</code>
+	<div id="success-result" class="completion-success-full">
+		<!-- Discount Code Display (prominent) -->
+		<div class="discount-code-section">
+			<h3>{ t.Completion.Title }</h3>
+			<div class="discount-code-display">
+				<code>{ discountCode }</code>
+			</div>
+			<p class="discount-info">
+				{ strings.Replace(t.Completion.SaveInfo, "{percent}", fmt.Sprintf("%d", discountPercent), 1) }
+			</p>
 		</div>
-		<p class="discount-info">
-			{ strings.Replace(t.Completion.SaveInfo, "{percent}", fmt.Sprintf("%d", discountPercent), 1) }
-		</p>
-		<p class="save-info">
-			{ t.Completion.Instruction }
-		</p>
-		<button onclick="location.reload()" class="btn btn-primary">{ t.Completion.PlayAgain }</button>
+		<!-- Instructions -->
+		<div class="instructions-section">
+			<p class="save-info">
+				{ t.Completion.Instruction }
+			</p>
+		</div>
+		<!-- Email Success Message (placeholder) -->
+		<div class="email-success-message">
+			<span class="success-icon">✉️</span>
+			<p>{ t.Completion.EmailSent }</p>
+		</div>
+		<!-- Play Again Button -->
+		<div class="actions-section">
+			<button onclick="location.reload()" class="btn btn-primary">
+				{ t.Completion.PlayAgain }
+			</button>
+		</div>
 	</div>
 }
 

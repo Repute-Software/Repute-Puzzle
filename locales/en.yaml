@@ -20,7 +20,8 @@ modal:
 completion:
   title: "Your Discount Code"
   save_info: "Save {percent}% on your next purchase!"
-  instruction: "Please save this code or check your email for confirmation."
+  instruction: "Please save this code for your purchase."
+  email_sent: "A confirmation email has been sent to your inbox!"
   play_again: "Play Again"
   
 error:

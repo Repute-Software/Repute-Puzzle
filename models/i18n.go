@@ -32,6 +32,7 @@ type Translations struct {
 		Title       string `yaml:"title"`
 		SaveInfo    string `yaml:"save_info"`
 		Instruction string `yaml:"instruction"`
+		EmailSent   string `yaml:"email_sent"`
 		PlayAgain   string `yaml:"play_again"`
 	} `yaml:"completion"`
 	Error struct {

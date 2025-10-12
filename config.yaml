@@ -1,5 +1,5 @@
 puzzle:
-  grid_size: 9     # 3x3, 4x4, 5x5, etc.
+  grid_size: 3   # 3x3, 4x4, 5x5, etc.
   discount_percent: 15   # Discount amount for completion
   time_limit: 90         # Time limit in seconds (0 = no limit)
   testing_mode: true     # Set to true to highlight clickable tiles

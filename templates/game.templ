@@ -61,7 +61,7 @@ templ Game(gridSize int, imageURL string, timeLimit int, testingMode bool, scram
 					<span>{ t.Modal.MovesLabel }: <strong id="final-moves">0</strong></span>
 					<span>{ t.Modal.TimeLabel }: <strong id="final-time">0:00</strong></span>
 				</p>
-				<form id="email-form" hx-post="/complete" hx-target="#modal-body" hx-swap="innerHTML">
+				<form id="email-form" hx-post="/complete" hx-target="#email-form" hx-swap="outerHTML swap:500ms settle:500ms scroll:smooth">
 					<div class="form-group">
 						<label for="email">{ t.Modal.EmailPrompt }</label>
 						<input type="email" id="email" name="email" required placeholder={ t.Modal.EmailPlaceholder }/>
@@ -71,7 +71,6 @@ templ Game(gridSize int, imageURL string, timeLimit int, testingMode bool, scram
 					<input type="hidden" name="lang" value={ lang }/>
 					<button type="submit" class="btn btn-success">{ t.Modal.GetCodeButton }</button>
 				</form>
-				<div id="modal-body"></div>
 			</div>
 		</div>
 		
