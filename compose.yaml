@@ -1,0 +1,17 @@
+services:
+  puzzle:
+    build: .
+    container_name: sliding-puzzle
+    ports:
+      - "8080:8080"
+    volumes:
+      # Mount images directory so operator can add PNG files
+      - ./images:/app/images:ro
+      # Mount data directory for database persistence
+      - ./data:/app/data
+      # Mount config for easy configuration changes
+      - ./config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
+

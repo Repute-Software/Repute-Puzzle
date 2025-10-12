@@ -1,0 +1,32 @@
+package templates
+
+import (
+	"fmt"
+	"strings"
+	"puzzle/models"
+)
+
+templ CompletionSuccess(discountCode string, discountPercent int, t *models.Translations) {
+	<div class="completion-success">
+		<h3>{ t.Completion.Title }</h3>
+		<div class="discount-code">
+			<code>{ discountCode }</code>
+		</div>
+		<p class="discount-info">
+			{ strings.Replace(t.Completion.SaveInfo, "{percent}", fmt.Sprintf("%d", discountPercent), 1) }
+		</p>
+		<p class="save-info">
+			{ t.Completion.Instruction }
+		</p>
+		<button onclick="location.reload()" class="btn btn-primary">{ t.Completion.PlayAgain }</button>
+	</div>
+}
+
+templ CompletionError(message string, t *models.Translations) {
+	<div class="completion-error">
+		<h3>{ t.Error.Title }</h3>
+		<p>{ message }</p>
+		<button onclick="location.reload()" class="btn btn-primary">{ t.Error.TryAgain }</button>
+	</div>
+}
+

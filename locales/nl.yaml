@@ -1,0 +1,32 @@
+game:
+  title: "Schuifpuzzel Uitdaging"
+  subtitle: "Voltooi de puzzel om je kortingscode te winnen!"
+  moves: "Zetten"
+  time: "Tijd"
+  new_puzzle: "Nieuwe Puzzel"
+  show_solution: "Toon Oplossing"
+  auto_solve: "🤖 Auto-Oplossen"
+  solving: "🤖 Aan het oplossen..."
+  
+modal:
+  congratulations: "🎉 Gefeliciteerd!"
+  completed: "Je hebt de puzzel voltooid!"
+  moves_label: "Zetten"
+  time_label: "Tijd"
+  email_prompt: "Voer je e-mailadres in om je kortingscode te ontvangen:"
+  email_placeholder: "jouw@email.nl"
+  get_code_button: "Ontvang Mijn Kortingscode"
+  
+completion:
+  title: "Jouw Kortingscode"
+  save_info: "Bespaar {percent}% op je volgende aankoop!"
+  instruction: "Bewaar deze code of controleer je e-mail voor bevestiging."
+  play_again: "Opnieuw Spelen"
+  
+error:
+  title: "Oeps!"
+  try_again: "Probeer Opnieuw"
+  invalid_email: "Voer een geldig e-mailadres in"
+  failed_generate: "Kan geen kortingscode genereren. Probeer het opnieuw."
+  no_images: "Geen afbeeldingen gevonden. Neem contact op met support."
+

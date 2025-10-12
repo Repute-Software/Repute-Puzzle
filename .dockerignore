@@ -1,0 +1,25 @@
+# Ignore git files
+.git
+.gitignore
+
+# Ignore documentation
+README.md
+plan.md
+
+# Ignore local database
+data/
+*.db
+
+# Ignore build artifacts
+puzzle
+*.exe
+
+# Ignore IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ignore generated files
+*_templ.go
+

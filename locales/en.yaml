@@ -1,0 +1,32 @@
+game:
+  title: "Sliding Puzzle Challenge"
+  subtitle: "Complete the puzzle to win your discount code!"
+  moves: "Moves"
+  time: "Time"
+  new_puzzle: "New Puzzle"
+  show_solution: "Show Solution"
+  auto_solve: "🤖 Auto-Solve"
+  solving: "🤖 Solving..."
+  
+modal:
+  congratulations: "🎉 Congratulations!"
+  completed: "You've completed the puzzle!"
+  moves_label: "Moves"
+  time_label: "Time"
+  email_prompt: "Enter your email to receive your discount code:"
+  email_placeholder: "your@email.com"
+  get_code_button: "Get My Discount Code"
+  
+completion:
+  title: "Your Discount Code"
+  save_info: "Save {percent}% on your next purchase!"
+  instruction: "Please save this code or check your email for confirmation."
+  play_again: "Play Again"
+  
+error:
+  title: "Oops!"
+  try_again: "Try Again"
+  invalid_email: "Please provide a valid email address"
+  failed_generate: "Failed to generate discount code. Please try again."
+  no_images: "No images found. Please contact support."
+
