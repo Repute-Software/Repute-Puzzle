@@ -2,6 +2,8 @@ puzzle:
   grid_size: 3   # 3x3, 4x4, 5x5, etc.
   discount_percent: 15   # Discount amount for completion
   time_limit: 90         # Time limit in seconds (0 = no limit)
+  timer_mode: "first_move"  # When to start timer: "immediate", "first_move", or "countdown"
+  countdown_time: 120    # Time for countdown mode in seconds (only used if timer_mode is "countdown")
   testing_mode: true     # Set to true to highlight clickable tiles
   scramble_moves: 25  # Number of moves to scramble from solved state
   auto_solve_speed: 50   # Milliseconds per move for auto-solve animation

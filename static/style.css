@@ -1,3 +1,8 @@
+:root {
+    --primary-color: #667eea;
+    --primary-hover: #5568d3;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -6,7 +11,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -183,12 +188,12 @@ body {
 }
 
 .btn-primary {
-    background: #667eea;
+    background: var(--primary-color);
     color: white;
 }
 
 .btn-primary:hover {
-    background: #5568d3;
+    background: var(--primary-hover);
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
 }
@@ -481,5 +486,58 @@ form .btn-success {
     .modal-content {
         padding: 30px 20px;
     }
+}
+
+/* Embed Mode Styles */
+body:has(.embed-mode) {
+    background: transparent;
+    padding: 0;
+    min-height: auto;
+}
+
+.embed-mode {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.embed-mode .game-header {
+    display: none;
+}
+
+.embed-mode.game-container {
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.embed-mode .puzzle-grid {
+    max-width: 100%;
+}
+
+.embed-mode .game-stats {
+    margin-bottom: 20px;
+}
+
+.embed-mode .game-controls {
+    margin-top: 20px;
+}
+
+/* Use primary color in gradients */
+.modal-content h2 {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.discount-code-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+}
+
+.stat-value {
+    color: var(--primary-color);
 }
 

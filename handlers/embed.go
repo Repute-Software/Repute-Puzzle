@@ -8,21 +8,22 @@ import (
 	"path/filepath"
 	"puzzle/models"
 	"puzzle/templates"
+	"strings"
 	"time"
 )
 
-// GameHandler handles the main game page
-type GameHandler struct {
+// EmbedHandler handles the embed page
+type EmbedHandler struct {
 	Config *models.Config
 }
 
-// NewGameHandler creates a new game handler
-func NewGameHandler(config *models.Config) *GameHandler {
-	return &GameHandler{Config: config}
+// NewEmbedHandler creates a new embed handler
+func NewEmbedHandler(config *models.Config) *EmbedHandler {
+	return &EmbedHandler{Config: config}
 }
 
-// ServeHTTP handles the game page request
-func (h *GameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+// ServeHTTP handles the embed page request
+func (h *EmbedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Detect language from URL parameter
 	lang := r.URL.Query().Get("lang")
 	if lang == "" {
@@ -37,6 +38,23 @@ func (h *GameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		lang = "en"
 	}
 
+	// Get primary color from URL parameter
+	primaryColor := r.URL.Query().Get("primaryColor")
+	if primaryColor == "" {
+		primaryColor = "667eea" // Default color
+	}
+
+	// Ensure it doesn't have # prefix
+	primaryColor = strings.TrimPrefix(primaryColor, "#")
+
+	// Validate hex color format (6 characters)
+	if !isValidHexColor(primaryColor) {
+		primaryColor = "667eea" // Fallback to default
+	}
+
+	// Add # prefix for CSS
+	primaryColor = "#" + primaryColor
+
 	// Select a random image from the images directory
 	imageURL, err := h.getRandomImage()
 	if err != nil {
@@ -44,8 +62,8 @@ func (h *GameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Render the game template
-	component := templates.Game(
+	// Render the embed template
+	component := templates.Embed(
 		h.Config.Puzzle.GridSize,
 		imageURL,
 		h.Config.Puzzle.TimeLimit,
@@ -56,6 +74,7 @@ func (h *GameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.Config.Puzzle.AutoSolveSpeed,
 		translations,
 		lang,
+		primaryColor,
 	)
 
 	if err := component.Render(r.Context(), w); err != nil {
@@ -65,7 +84,7 @@ func (h *GameHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // getRandomImage selects a random PNG image from the images directory
-func (h *GameHandler) getRandomImage() (string, error) {
+func (h *EmbedHandler) getRandomImage() (string, error) {
 	files, err := os.ReadDir(h.Config.Images.Directory)
 	if err != nil {
 		return "", fmt.Errorf("failed to read images directory: %w", err)
@@ -88,4 +107,17 @@ func (h *GameHandler) getRandomImage() (string, error) {
 	selectedImage := pngFiles[rand.Intn(len(pngFiles))]
 
 	return "/images/" + selectedImage, nil
+}
+
+// isValidHexColor validates a hex color string (without #)
+func isValidHexColor(color string) bool {
+	if len(color) != 6 {
+		return false
+	}
+	for _, c := range color {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
 }

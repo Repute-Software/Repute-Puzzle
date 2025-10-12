@@ -5,19 +5,9 @@ import (
 	"puzzle/models"
 )
 
-templ Game(gridSize int, imageURL string, timeLimit int, timerMode string, countdownTime int, testingMode bool, scrambleMoves int, autoSolveSpeed int, t *models.Translations, lang string) {
+templ Embed(gridSize int, imageURL string, timeLimit int, timerMode string, countdownTime int, testingMode bool, scrambleMoves int, autoSolveSpeed int, t *models.Translations, lang string, primaryColor string) {
 	@Layout(t.Game.Title) {
-		<div class="game-container">
-			<div class="game-header">
-				<h1>{ t.Game.Title }</h1>
-				<p>{ t.Game.Subtitle }</p>
-				<div class="language-selector">
-					<a href="?lang=en" class={ templ.KV("active", lang == "en") }>🇬🇧 EN</a>
-					<span class="lang-separator">|</span>
-					<a href="?lang=nl" class={ templ.KV("active", lang == "nl") }>🇳🇱 NL</a>
-				</div>
-			</div>
-			
+		<div class="game-container embed-mode" data-embed="true" data-primary-color={ primaryColor }>
 			<div class="game-stats">
 				<div class="stat">
 					<span class="stat-label">{ t.Game.Moves }:</span>
@@ -84,6 +74,9 @@ templ Game(gridSize int, imageURL string, timeLimit int, timerMode string, count
 				}
 			};
 		</script>
+		
+		<!-- Embed-specific JavaScript -->
+		<script src="/static/embed.js"></script>
 	}
 }
 

@@ -18,12 +18,14 @@ type Config struct {
 
 // PuzzleConfig contains game settings
 type PuzzleConfig struct {
-	GridSize        int  `yaml:"grid_size"`
-	DiscountPercent int  `yaml:"discount_percent"`
-	TimeLimit       int  `yaml:"time_limit"`       // in seconds, 0 = no limit
-	TestingMode     bool `yaml:"testing_mode"`     // highlight clickable tiles for testing
-	ScrambleMoves   int  `yaml:"scramble_moves"`   // number of moves to scramble from solved state
-	AutoSolveSpeed  int  `yaml:"auto_solve_speed"` // milliseconds per move for auto-solve
+	GridSize        int    `yaml:"grid_size"`
+	DiscountPercent int    `yaml:"discount_percent"`
+	TimeLimit       int    `yaml:"time_limit"`       // in seconds, 0 = no limit
+	TimerMode       string `yaml:"timer_mode"`       // when to start timer: "immediate", "first_move", or "countdown"
+	CountdownTime   int    `yaml:"countdown_time"`   // time for countdown mode in seconds
+	TestingMode     bool   `yaml:"testing_mode"`     // highlight clickable tiles for testing
+	ScrambleMoves   int    `yaml:"scramble_moves"`   // number of moves to scramble from solved state
+	AutoSolveSpeed  int    `yaml:"auto_solve_speed"` // milliseconds per move for auto-solve
 }
 
 // DatabaseConfig contains database settings
@@ -88,6 +90,15 @@ func (c *Config) Validate() error {
 	}
 	if c.Puzzle.AutoSolveSpeed < 1 || c.Puzzle.AutoSolveSpeed > 10000 {
 		return fmt.Errorf("auto_solve_speed must be between 1 and 10000 ms, got %d", c.Puzzle.AutoSolveSpeed)
+	}
+	if c.Puzzle.TimerMode != "" && c.Puzzle.TimerMode != "immediate" && c.Puzzle.TimerMode != "first_move" && c.Puzzle.TimerMode != "countdown" {
+		return fmt.Errorf("timer_mode must be 'immediate', 'first_move', or 'countdown', got '%s'", c.Puzzle.TimerMode)
+	}
+	if c.Puzzle.TimerMode == "" {
+		c.Puzzle.TimerMode = "immediate" // Default to immediate for backward compatibility
+	}
+	if c.Puzzle.CountdownTime < 1 {
+		return fmt.Errorf("countdown_time must be at least 1 second, got %d", c.Puzzle.CountdownTime)
 	}
 	if c.Server.Port < 1 || c.Server.Port > 65535 {
 		return fmt.Errorf("server port must be between 1 and 65535, got %d", c.Server.Port)

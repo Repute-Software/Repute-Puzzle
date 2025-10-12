@@ -13,6 +13,7 @@ A containerized web application that serves as an interactive sliding puzzle gam
 - 🐳 **Fully Containerized** - Easy deployment with Docker/Podman
 - 🔐 **Database Storage** - SQLite stores completions and codes
 - 🎯 **GitHub Actions CI/CD** - Automated builds and deployments
+- 🖼️ **Iframe Embeddable** - Embed on your website with custom branding ([see guide](EMBEDDING.md))
 
 ## Quick Start
 

@@ -46,6 +46,7 @@ func main() {
 
 	// Create handlers
 	gameHandler := handlers.NewGameHandler(config)
+	embedHandler := handlers.NewEmbedHandler(config)
 	completionHandler := handlers.NewCompletionHandler(db, config, emailService)
 
 	// Set up routes
@@ -53,6 +54,9 @@ func main() {
 
 	// Game page
 	mux.Handle("/", gameHandler)
+
+	// Embed page
+	mux.Handle("/embed", embedHandler)
 
 	// Completion endpoint
 	mux.Handle("/complete", completionHandler)

@@ -6,14 +6,17 @@ let gameState = {
     moves: 0,
     timeElapsed: 0,
     timeLimit: 0,
+    timerMode: 'immediate',    // When to start timer: "immediate", "first_move", "countdown"
+    countdownTime: 120,        // Time for countdown mode
+    timerStarted: false,       // Track if timer has started (for first_move mode)
     timer: null,
     isComplete: false,
     imageUrl: '',
     testingMode: false,
-    scrambleMoves: [],      // Store the scramble sequence
-    solutionMoves: [],      // Reverse of scramble (the solution)
-    scrambleMovesCount: 50, // Number of moves to scramble
-    autoSolveSpeed: 50      // Speed for auto-solve animation
+    scrambleMoves: [],         // Store the scramble sequence
+    solutionMoves: [],         // Reverse of scramble (the solution)
+    scrambleMovesCount: 50,    // Number of moves to scramble
+    autoSolveSpeed: 50         // Speed for auto-solve animation
 };
 
 // Initialize the puzzle when the page loads
@@ -24,6 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
     gameState.gridSize = parseInt(container.dataset.gridSize);
     gameState.imageUrl = container.dataset.imageUrl;
     gameState.timeLimit = parseInt(container.dataset.timeLimit);
+    gameState.timerMode = container.dataset.timerMode || 'immediate';
+    gameState.countdownTime = parseInt(container.dataset.countdownTime) || 120;
     gameState.testingMode = container.dataset.testingMode === 'true';
     gameState.scrambleMovesCount = parseInt(container.dataset.scrambleMoves);
     gameState.autoSolveSpeed = parseInt(container.dataset.autoSolveSpeed);
@@ -48,6 +53,7 @@ function initializePuzzle() {
     gameState.moves = 0;
     gameState.timeElapsed = 0;
     gameState.isComplete = false;
+    gameState.timerStarted = false;
     gameState.scrambleMoves = [];
     gameState.solutionMoves = [];
     
@@ -58,9 +64,14 @@ function initializePuzzle() {
         clearInterval(gameState.timer);
     }
     
-    // Start new timer if time limit is set
-    if (gameState.timeLimit > 0) {
-        startTimer();
+    // Start timer based on timer mode
+    if (gameState.timeLimit > 0 || gameState.timerMode === 'countdown') {
+        if (gameState.timerMode === 'immediate') {
+            startTimer();
+        } else if (gameState.timerMode === 'countdown') {
+            startCountdownTimer();
+        }
+        // For 'first_move' mode, timer will start on first tile click
     }
     
     // Shuffle the puzzle (starts from solved state and records moves)
@@ -187,6 +198,13 @@ function handleTileClick(index) {
     const validMoves = getValidMoves(gameState.emptyIndex);
     
     if (validMoves.includes(index)) {
+        // Start timer on first move if timer_mode is "first_move"
+        if (gameState.timerMode === 'first_move' && !gameState.timerStarted && gameState.moves === 0) {
+            if (gameState.timeLimit > 0) {
+                startTimer();
+            }
+        }
+        
         // Swap tiles
         swapTiles(gameState.emptyIndex, index);
         gameState.emptyIndex = index;
@@ -241,8 +259,9 @@ function updateMoveCounter() {
     document.getElementById('move-count').textContent = gameState.moves;
 }
 
-// Start timer
+// Start timer (count up or down depending on mode)
 function startTimer() {
+    gameState.timerStarted = true;
     const timeDisplay = document.getElementById('time-display');
     
     gameState.timer = setInterval(() => {
@@ -259,6 +278,28 @@ function startTimer() {
             }
         } else {
             timeDisplay.textContent = formatTime(gameState.timeElapsed);
+        }
+    }, 1000);
+}
+
+// Start countdown timer (counts down from countdown_time)
+function startCountdownTimer() {
+    gameState.timerStarted = true;
+    const timeDisplay = document.getElementById('time-display');
+    gameState.timeElapsed = 0;
+    
+    // Set initial display
+    timeDisplay.textContent = formatTime(gameState.countdownTime);
+    
+    gameState.timer = setInterval(() => {
+        gameState.timeElapsed++;
+        const remaining = gameState.countdownTime - gameState.timeElapsed;
+        timeDisplay.textContent = formatTime(remaining);
+        
+        if (remaining <= 0) {
+            clearInterval(gameState.timer);
+            alert('Time is up! Try again.');
+            initializePuzzle();
         }
     }, 1000);
 }
