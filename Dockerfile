@@ -38,7 +38,7 @@ COPY --from=builder /app/puzzle .
 # Copy static files and templates
 COPY --from=builder /app/static ./static
 COPY --from=builder /app/locales ./locales
-COPY --from=builder /app/config.yaml .
+COPY --from=builder /app/config.example.yaml ./config.yaml
 
 # Create necessary directories
 RUN mkdir -p /app/data /app/images
