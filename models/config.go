@@ -10,6 +10,7 @@ import (
 // Config holds all application configuration
 type Config struct {
 	Puzzle   PuzzleConfig   `yaml:"puzzle"`
+	Email    EmailConfig    `yaml:"email"`
 	Database DatabaseConfig `yaml:"database"`
 	Server   ServerConfig   `yaml:"server"`
 	Images   ImagesConfig   `yaml:"images"`
@@ -38,6 +39,17 @@ type ServerConfig struct {
 // ImagesConfig contains image directory settings
 type ImagesConfig struct {
 	Directory string `yaml:"directory"`
+}
+
+// EmailConfig contains email service settings
+type EmailConfig struct {
+	Enabled   bool   `yaml:"enabled"`
+	Provider  string `yaml:"provider"`
+	APIKey    string `yaml:"api_key"`
+	FromEmail string `yaml:"from_email"`
+	FromName  string `yaml:"from_name"`
+	SubjectEN string `yaml:"subject_en"`
+	SubjectNL string `yaml:"subject_nl"`
 }
 
 // LoadConfig reads and parses the config.yaml file
@@ -83,5 +95,15 @@ func (c *Config) Validate() error {
 	if c.Images.Directory == "" {
 		return fmt.Errorf("images directory cannot be empty")
 	}
+
+	// Email validation
+	if c.Email.Enabled {
+		if c.Email.FromEmail == "" {
+			return fmt.Errorf("email.from_email is required")
+		}
+		// Note: API key can be set via config.yaml or RESEND_API_KEY env var
+		// Validation happens at runtime in main.go
+	}
+
 	return nil
 }

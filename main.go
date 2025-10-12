@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"puzzle/handlers"
 	"puzzle/models"
 )
@@ -24,9 +25,28 @@ func main() {
 
 	log.Println("Database initialized successfully")
 
+	// Override email API key from environment variable (more secure)
+	if apiKey := os.Getenv("RESEND_API_KEY"); apiKey != "" {
+		config.Email.APIKey = apiKey
+		log.Println("Email API key loaded from environment variable")
+	}
+
+	// Initialize email service
+	var emailService *models.EmailService
+	if config.Email.Enabled {
+		if config.Email.APIKey != "" {
+			emailService = models.NewEmailService(&config.Email)
+			log.Printf("Email service enabled (sending from: %s)", config.Email.FromEmail)
+		} else {
+			log.Println("Email enabled but no API key provided - emails will not be sent")
+		}
+	} else {
+		log.Println("Email service disabled")
+	}
+
 	// Create handlers
 	gameHandler := handlers.NewGameHandler(config)
-	completionHandler := handlers.NewCompletionHandler(db, config)
+	completionHandler := handlers.NewCompletionHandler(db, config, emailService)
 
 	// Set up routes
 	mux := http.NewServeMux()

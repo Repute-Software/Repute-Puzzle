@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log"
 	"net/http"
 	"puzzle/models"
 	"puzzle/templates"
@@ -10,8 +11,9 @@ import (
 
 // CompletionHandler handles puzzle completion and discount code generation
 type CompletionHandler struct {
-	DB     *models.DB
-	Config *models.Config
+	DB           *models.DB
+	Config       *models.Config
+	EmailService *models.EmailService
 }
 
 // getTranslations loads translations from form data or defaults to English
@@ -28,10 +30,11 @@ func (h *CompletionHandler) getTranslations(r *http.Request) *models.Translation
 }
 
 // NewCompletionHandler creates a new completion handler
-func NewCompletionHandler(db *models.DB, config *models.Config) *CompletionHandler {
+func NewCompletionHandler(db *models.DB, config *models.Config, emailService *models.EmailService) *CompletionHandler {
 	return &CompletionHandler{
-		DB:     db,
-		Config: config,
+		DB:           db,
+		Config:       config,
+		EmailService: emailService,
 	}
 }
 
@@ -115,6 +118,20 @@ func (h *CompletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.renderErrorWithTranslations(w, r, "Failed to save completion record", translations)
 		return
+	}
+
+	// Send email with discount code (in background)
+	lang := r.FormValue("lang")
+	if h.EmailService != nil {
+		go func() {
+			// Send email in background (don't block response)
+			if err := h.EmailService.SendDiscountCode(email, discountCode, h.Config.Puzzle.DiscountPercent, lang); err != nil {
+				// Log error but don't fail the request
+				log.Printf("Failed to send email to %s: %v\n", email, err)
+			} else {
+				log.Printf("Successfully sent discount code email to %s\n", email)
+			}
+		}()
 	}
 
 	// Render success response

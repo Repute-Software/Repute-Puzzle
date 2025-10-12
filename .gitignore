@@ -36,3 +36,9 @@ Thumbs.db
 # Generated Templ files
 *_templ.go
 
+# Environment variables (contains secrets!)
+.env
+
+# Config file with secrets (use config.example.yaml as template)
+config.yaml
+

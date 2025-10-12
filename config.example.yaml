@@ -1,0 +1,22 @@
+puzzle:
+  grid_size: 3   # 3x3, 4x4, 5x5, etc.
+  discount_percent: 15   # Discount amount for completion
+  time_limit: 90         # Time limit in seconds (0 = no limit)
+  testing_mode: true     # Set to true to highlight clickable tiles
+  scramble_moves: 25  # Number of moves to scramble from solved state
+  auto_solve_speed: 50   # Milliseconds per move for auto-solve animation
+email:
+  enabled: true                          # Enable/disable email sending
+  provider: "resend"                     # Email provider
+  api_key: "re_YOUR_API_KEY_HERE"       # Get from https://resend.com/api-keys
+  from_email: "noreply@yourdomain.com"  # Sender email (use your domain or onboarding@resend.dev)
+  from_name: "Your Company Name"         # Sender name
+  subject_en: "Your Discount Code!"      # Subject (English)
+  subject_nl: "Jouw Kortingscode!"      # Subject (Dutch)
+database:
+  path: "./data/puzzle.db"
+server:
+  port: 8080
+images:
+  directory: "./images"
+

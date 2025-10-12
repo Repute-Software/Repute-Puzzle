@@ -11,6 +11,7 @@ services:
     restart: unless-stopped
     environment:
       - TZ=UTC
+      - RESEND_API_KEY=${RESEND_API_KEY}
     logging:
       driver: "json-file"
       options:
