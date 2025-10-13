@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - main
+      - staging
     tags:
       - 'v*.*.*'
   pull_request:
     branches:
       - main
+      - staging
 
 env:
   REGISTRY: ghcr.io
@@ -48,6 +50,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=staging,enable={{is_default_branch == false && github.ref == 'refs/heads/staging'}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
