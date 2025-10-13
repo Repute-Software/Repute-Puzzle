@@ -35,12 +35,14 @@ type DatabaseConfig struct {
 
 // ServerConfig contains HTTP server settings
 type ServerConfig struct {
-	Port int `yaml:"port"`
+	Port          int    `yaml:"port"`
+	SessionSecret string `yaml:"session_secret"`
 }
 
 // ImagesConfig contains image directory settings
 type ImagesConfig struct {
-	Directory string `yaml:"directory"`
+	Directory       string `yaml:"directory"`
+	MaxUploadSizeMB int    `yaml:"max_upload_size_mb"`
 }
 
 // EmailConfig contains email service settings

@@ -56,19 +56,82 @@ func InitDB(dbPath string) (*DB, error) {
 // createTables creates the necessary database tables
 func createTables(db *sql.DB) error {
 	schema := `
-	CREATE TABLE IF NOT EXISTS completions (
+	-- Companies (tenants)
+	CREATE TABLE IF NOT EXISTS companies (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		email TEXT NOT NULL,
-		discount_code TEXT NOT NULL UNIQUE,
-		grid_size INTEGER NOT NULL,
-		moves INTEGER NOT NULL,
-		time_seconds INTEGER NOT NULL,
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		name TEXT NOT NULL,
+		slug TEXT UNIQUE NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		is_active BOOLEAN DEFAULT 1
 	);
 	
-	CREATE INDEX IF NOT EXISTS idx_email ON completions(email);
-	CREATE INDEX IF NOT EXISTS idx_discount_code ON completions(discount_code);
-	CREATE INDEX IF NOT EXISTS idx_created_at ON completions(created_at);
+	-- Users (company admins/members)
+	CREATE TABLE IF NOT EXISTS users (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		company_id INTEGER NOT NULL,
+		email TEXT NOT NULL UNIQUE,
+		password_hash TEXT NOT NULL,
+		role TEXT DEFAULT 'admin',
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (company_id) REFERENCES companies(id)
+	);
+	
+	CREATE INDEX IF NOT EXISTS idx_users_company ON users(company_id);
+	CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+	
+	-- Sessions (authentication)
+	CREATE TABLE IF NOT EXISTS sessions (
+		id TEXT PRIMARY KEY,
+		user_id INTEGER NOT NULL,
+		expires_at DATETIME NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (user_id) REFERENCES users(id)
+	);
+	
+	CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+	CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+	
+	-- Puzzles (each company can have multiple)
+	CREATE TABLE IF NOT EXISTS puzzles (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		company_id INTEGER NOT NULL,
+		name TEXT NOT NULL,
+		slug TEXT NOT NULL,
+		image_path TEXT NOT NULL,
+		grid_size INTEGER DEFAULT 3,
+		discount_percent INTEGER DEFAULT 15,
+		time_limit INTEGER DEFAULT 90,
+		timer_mode TEXT DEFAULT 'first_move',
+		countdown_time INTEGER DEFAULT 15,
+		scramble_moves INTEGER DEFAULT 25,
+		auto_solve_speed INTEGER DEFAULT 50,
+		is_active BOOLEAN DEFAULT 1,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (company_id) REFERENCES companies(id),
+		UNIQUE(company_id, slug)
+	);
+	
+	CREATE INDEX IF NOT EXISTS idx_puzzles_company ON puzzles(company_id);
+	CREATE INDEX IF NOT EXISTS idx_puzzles_slug ON puzzles(company_id, slug);
+	CREATE INDEX IF NOT EXISTS idx_puzzles_active ON puzzles(is_active);
+	
+	-- Completions (updated to reference puzzle)
+	CREATE TABLE IF NOT EXISTS completions (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		puzzle_id INTEGER NOT NULL,
+		email TEXT NOT NULL,
+		discount_code TEXT NOT NULL UNIQUE,
+		moves INTEGER NOT NULL,
+		time_seconds INTEGER NOT NULL,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		FOREIGN KEY (puzzle_id) REFERENCES puzzles(id)
+	);
+	
+	CREATE INDEX IF NOT EXISTS idx_completions_puzzle ON completions(puzzle_id);
+	CREATE INDEX IF NOT EXISTS idx_completions_email ON completions(puzzle_id, email);
+	CREATE INDEX IF NOT EXISTS idx_completions_code ON completions(discount_code);
+	CREATE INDEX IF NOT EXISTS idx_completions_created ON completions(created_at);
 	`
 
 	_, err := db.Exec(schema)
