@@ -9,11 +9,14 @@ import (
 
 // Company represents a tenant organization
 type Company struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Slug      string    `json:"slug"`
-	CreatedAt time.Time `json:"created_at"`
-	IsActive  bool      `json:"is_active"`
+	ID             int       `json:"id"`
+	Name           string    `json:"name"`
+	Slug           string    `json:"slug"`
+	EmailAPIKey    string    `json:"email_api_key,omitempty"`
+	EmailFromEmail string    `json:"email_from_email,omitempty"`
+	EmailFromName  string    `json:"email_from_name,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+	IsActive       bool      `json:"is_active"`
 }
 
 // CreateCompany creates a new company
@@ -39,25 +42,40 @@ func (db *DB) CreateCompany(name, slug string) (*Company, error) {
 // GetCompanyByID retrieves a company by ID
 func (db *DB) GetCompanyByID(id int) (*Company, error) {
 	query := `
-		SELECT id, name, slug, created_at, is_active
+		SELECT id, name, slug, email_api_key, email_from_email, email_from_name, created_at, is_active
 		FROM companies
 		WHERE id = ?
 	`
 
 	var c Company
+	var emailAPIKey, emailFromEmail, emailFromName sql.NullString
 	err := db.QueryRow(query, id).Scan(
 		&c.ID,
 		&c.Name,
 		&c.Slug,
+		&emailAPIKey,
+		&emailFromEmail,
+		&emailFromName,
 		&c.CreatedAt,
 		&c.IsActive,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get company: %w", err)
+	}
+
+	// Handle NULL values
+	if emailAPIKey.Valid {
+		c.EmailAPIKey = emailAPIKey.String
+	}
+	if emailFromEmail.Valid {
+		c.EmailFromEmail = emailFromEmail.String
+	}
+	if emailFromName.Valid {
+		c.EmailFromName = emailFromName.String
+	}
 
 	if err == sql.ErrNoRows {
 		return nil, nil
-	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to get company: %w", err)
 	}
 
 	return &c, nil
@@ -66,16 +84,20 @@ func (db *DB) GetCompanyByID(id int) (*Company, error) {
 // GetCompanyBySlug retrieves a company by slug
 func (db *DB) GetCompanyBySlug(slug string) (*Company, error) {
 	query := `
-		SELECT id, name, slug, created_at, is_active
+		SELECT id, name, slug, email_api_key, email_from_email, email_from_name, created_at, is_active
 		FROM companies
 		WHERE slug = ?
 	`
 
 	var c Company
+	var emailAPIKey, emailFromEmail, emailFromName sql.NullString
 	err := db.QueryRow(query, slug).Scan(
 		&c.ID,
 		&c.Name,
 		&c.Slug,
+		&emailAPIKey,
+		&emailFromEmail,
+		&emailFromName,
 		&c.CreatedAt,
 		&c.IsActive,
 	)
@@ -85,6 +107,17 @@ func (db *DB) GetCompanyBySlug(slug string) (*Company, error) {
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get company: %w", err)
+	}
+
+	// Handle NULL values
+	if emailAPIKey.Valid {
+		c.EmailAPIKey = emailAPIKey.String
+	}
+	if emailFromEmail.Valid {
+		c.EmailFromEmail = emailFromEmail.String
+	}
+	if emailFromName.Valid {
+		c.EmailFromName = emailFromName.String
 	}
 
 	return &c, nil
@@ -138,14 +171,30 @@ func (db *DB) UpdateCompany(id int, name, slug string) error {
 	return nil
 }
 
+// UpdateCompanyEmailSettings updates company email settings
+func (db *DB) UpdateCompanyEmailSettings(id int, apiKey, fromEmail, fromName string) error {
+	query := `
+		UPDATE companies
+		SET email_api_key = ?, email_from_email = ?, email_from_name = ?
+		WHERE id = ?
+	`
+
+	_, err := db.Exec(query, apiKey, fromEmail, fromName, id)
+	if err != nil {
+		return fmt.Errorf("failed to update company email settings: %w", err)
+	}
+
+	return nil
+}
+
 // GenerateSlug generates a URL-friendly slug from company name
 func GenerateSlug(name string) string {
 	// Convert to lowercase
 	slug := strings.ToLower(name)
-	
+
 	// Replace spaces with hyphens
 	slug = strings.ReplaceAll(slug, " ", "-")
-	
+
 	// Remove special characters (keep only alphanumeric and hyphens)
 	var result []rune
 	for _, r := range slug {
@@ -153,17 +202,16 @@ func GenerateSlug(name string) string {
 			result = append(result, r)
 		}
 	}
-	
+
 	slug = string(result)
-	
+
 	// Remove consecutive hyphens
 	for strings.Contains(slug, "--") {
 		slug = strings.ReplaceAll(slug, "--", "-")
 	}
-	
+
 	// Trim hyphens from start and end
 	slug = strings.Trim(slug, "-")
-	
+
 	return slug
 }
-

@@ -33,10 +33,10 @@ func InitDB(dbPath string) (*DB, error) {
 
 	// Configure connection pool
 	// SQLite has limited concurrency, so keep these numbers low
-	db.SetMaxOpenConns(10)                      // Maximum 10 open connections
-	db.SetMaxIdleConns(5)                       // Keep 5 idle connections
-	db.SetConnMaxLifetime(0)                    // Connections don't expire (SQLite is local)
-	db.SetConnMaxIdleTime(5 * time.Minute)     // Close idle connections after 5 minutes
+	db.SetMaxOpenConns(10)                 // Maximum 10 open connections
+	db.SetMaxIdleConns(5)                  // Keep 5 idle connections
+	db.SetConnMaxLifetime(0)               // Connections don't expire (SQLite is local)
+	db.SetConnMaxIdleTime(5 * time.Minute) // Close idle connections after 5 minutes
 
 	// Test the connection
 	if err := db.Ping(); err != nil {
@@ -61,6 +61,9 @@ func createTables(db *sql.DB) error {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT NOT NULL,
 		slug TEXT UNIQUE NOT NULL,
+		email_api_key TEXT,
+		email_from_email TEXT,
+		email_from_name TEXT,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		is_active BOOLEAN DEFAULT 1
 	);
@@ -106,6 +109,7 @@ func createTables(db *sql.DB) error {
 		scramble_moves INTEGER DEFAULT 25,
 		auto_solve_speed INTEGER DEFAULT 50,
 		testing_mode BOOLEAN DEFAULT 0,
+		code_expiration_days INTEGER DEFAULT 0,
 		is_active BOOLEAN DEFAULT 1,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -125,6 +129,8 @@ func createTables(db *sql.DB) error {
 		discount_code TEXT NOT NULL UNIQUE,
 		moves INTEGER NOT NULL,
 		time_seconds INTEGER NOT NULL,
+		expires_at DATETIME,
+		is_used BOOLEAN DEFAULT 0,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		FOREIGN KEY (puzzle_id) REFERENCES puzzles(id)
 	);
@@ -133,6 +139,7 @@ func createTables(db *sql.DB) error {
 	CREATE INDEX IF NOT EXISTS idx_completions_email ON completions(puzzle_id, email);
 	CREATE INDEX IF NOT EXISTS idx_completions_code ON completions(discount_code);
 	CREATE INDEX IF NOT EXISTS idx_completions_created ON completions(created_at);
+	CREATE INDEX IF NOT EXISTS idx_completions_expires ON completions(expires_at);
 	`
 
 	_, err := db.Exec(schema)

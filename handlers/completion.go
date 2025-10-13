@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // EmailJob represents an email to be sent
@@ -16,6 +17,7 @@ type EmailJob struct {
 	DiscountCode    string
 	DiscountPercent int
 	Lang            string
+	CompanySettings *models.CompanyEmailSettings
 }
 
 // CompletionHandler handles puzzle completion and discount code generation
@@ -38,7 +40,7 @@ func (h *CompletionHandler) startEmailWorkers(numWorkers int) {
 			for job := range h.emailQueue {
 				// Send email (email service has its own timeout)
 				if h.EmailService != nil {
-					if err := h.EmailService.SendDiscountCode(job.Email, job.DiscountCode, job.DiscountPercent, job.Lang); err != nil {
+					if err := h.EmailService.SendDiscountCodeWithSettings(job.Email, job.DiscountCode, job.DiscountPercent, job.Lang, job.CompanySettings); err != nil {
 						log.Printf("Worker %d: Failed to send email to %s: %v", workerID, job.Email, err)
 					} else {
 						log.Printf("Worker %d: Successfully sent discount code email to %s", workerID, job.Email)
@@ -187,6 +189,16 @@ func (h *CompletionHandler) handleCompletion(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Calculate expiration date if puzzle has expiration set
+	var expiresAt *time.Time
+	if puzzleID > 0 { // Only for database puzzles, not old config puzzles
+		puzzle, err := h.DB.GetPuzzleByID(puzzleID)
+		if err == nil && puzzle != nil && puzzle.CodeExpirationDays > 0 {
+			expiration := time.Now().AddDate(0, 0, puzzle.CodeExpirationDays)
+			expiresAt = &expiration
+		}
+	}
+
 	// Save completion to database
 	err = h.DB.SaveCompletion(
 		puzzleID,
@@ -194,6 +206,7 @@ func (h *CompletionHandler) handleCompletion(w http.ResponseWriter, r *http.Requ
 		discountCode,
 		moves,
 		timeSeconds,
+		expiresAt,
 	)
 	if err != nil {
 		h.renderErrorWithTranslations(w, r, "Failed to save completion record", translations)
@@ -203,6 +216,18 @@ func (h *CompletionHandler) handleCompletion(w http.ResponseWriter, r *http.Requ
 	// Queue email for sending (non-blocking)
 	lang := r.FormValue("lang")
 	if h.EmailService != nil && h.emailQueue != nil {
+		// Get company email settings for this puzzle
+		var companySettings *models.CompanyEmailSettings
+		if puzzleID > 0 { // Only for database puzzles, not old config puzzles
+			puzzle, err := h.DB.GetPuzzleByID(puzzleID)
+			if err == nil && puzzle != nil {
+				settings, err := h.DB.GetEmailSettingsForCompany(puzzle.CompanyID)
+				if err == nil {
+					companySettings = settings
+				}
+			}
+		}
+
 		// Send to worker queue with non-blocking select
 		select {
 		case h.emailQueue <- EmailJob{
@@ -210,6 +235,7 @@ func (h *CompletionHandler) handleCompletion(w http.ResponseWriter, r *http.Requ
 			DiscountCode:    discountCode,
 			DiscountPercent: discountPercent,
 			Lang:            lang,
+			CompanySettings: companySettings,
 		}:
 			log.Printf("Email job queued for %s (puzzle %d)", email, puzzleID)
 		default:

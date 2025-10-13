@@ -19,10 +19,39 @@ func NewEmailService(config *EmailConfig) *EmailService {
 	return &EmailService{Config: config}
 }
 
+// CompanyEmailSettings represents company-specific email settings
+type CompanyEmailSettings struct {
+	APIKey    string
+	FromEmail string
+	FromName  string
+}
+
 // SendDiscountCode sends discount code email to user
 func (s *EmailService) SendDiscountCode(email, discountCode string, discountPercent int, lang string) error {
+	return s.SendDiscountCodeWithSettings(email, discountCode, discountPercent, lang, nil)
+}
+
+// SendDiscountCodeWithSettings sends discount code email with company-specific settings
+func (s *EmailService) SendDiscountCodeWithSettings(email, discountCode string, discountPercent int, lang string, companySettings *CompanyEmailSettings) error {
 	if !s.Config.Enabled {
 		return nil // Email disabled, skip silently
+	}
+
+	// Use company settings if provided, otherwise fall back to global config
+	apiKey := s.Config.APIKey
+	fromEmail := s.Config.FromEmail
+	fromName := s.Config.FromName
+
+	if companySettings != nil {
+		if companySettings.APIKey != "" {
+			apiKey = companySettings.APIKey
+		}
+		if companySettings.FromEmail != "" {
+			fromEmail = companySettings.FromEmail
+		}
+		if companySettings.FromName != "" {
+			fromName = companySettings.FromName
+		}
 	}
 
 	// Select subject based on language
@@ -37,18 +66,23 @@ func (s *EmailService) SendDiscountCode(email, discountCode string, discountPerc
 		return fmt.Errorf("failed to generate email HTML: %w", err)
 	}
 
-	// Send via Resend
-	return s.sendViaResend(email, subject, htmlContent)
+	// Send via Resend with the appropriate settings
+	return s.sendViaResendWithSettings(email, subject, htmlContent, apiKey, fromEmail, fromName)
 }
 
-// sendViaResend sends email using Resend API
+// sendViaResend sends email using Resend API (backward compatibility)
 func (s *EmailService) sendViaResend(to, subject, htmlContent string) error {
+	return s.sendViaResendWithSettings(to, subject, htmlContent, s.Config.APIKey, s.Config.FromEmail, s.Config.FromName)
+}
+
+// sendViaResendWithSettings sends email using Resend API with specific settings
+func (s *EmailService) sendViaResendWithSettings(to, subject, htmlContent, apiKey, fromEmail, fromName string) error {
 	// Resend API endpoint
 	url := "https://api.resend.com/emails"
 
 	// Prepare request body
 	payload := map[string]interface{}{
-		"from":    fmt.Sprintf("%s <%s>", s.Config.FromName, s.Config.FromEmail),
+		"from":    fmt.Sprintf("%s <%s>", fromName, fromEmail),
 		"to":      []string{to},
 		"subject": subject,
 		"html":    htmlContent,
@@ -66,7 +100,7 @@ func (s *EmailService) sendViaResend(to, subject, htmlContent string) error {
 	}
 
 	// Set headers
-	req.Header.Set("Authorization", "Bearer "+s.Config.APIKey)
+	req.Header.Set("Authorization", "Bearer "+apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	// Send request
@@ -179,4 +213,27 @@ func (s *EmailService) generateEmailHTML(code string, percent int, lang string) 
 	}
 
 	return buf.String(), nil
+}
+
+// GetEmailSettingsForCompany retrieves email settings for a company
+func (db *DB) GetEmailSettingsForCompany(companyID int) (*CompanyEmailSettings, error) {
+	company, err := db.GetCompanyByID(companyID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get company: %w", err)
+	}
+	if company == nil {
+		return nil, fmt.Errorf("company not found")
+	}
+
+	// Return settings if company has custom email configuration
+	if company.EmailAPIKey != "" || company.EmailFromEmail != "" || company.EmailFromName != "" {
+		return &CompanyEmailSettings{
+			APIKey:    company.EmailAPIKey,
+			FromEmail: company.EmailFromEmail,
+			FromName:  company.EmailFromName,
+		}, nil
+	}
+
+	// Return nil if company uses default settings
+	return nil, nil
 }

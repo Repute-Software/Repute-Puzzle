@@ -160,6 +160,34 @@ func main() {
 	// Admin routes (protected)
 	mux.Handle("/admin", authMiddleware.RequireAuth(http.HandlerFunc(adminHandler.ShowDashboard)))
 
+	// Company settings routes (protected) - must come before general /admin/ route
+	mux.Handle("/admin/settings", authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			adminHandler.ShowCompanySettings(w, r)
+		} else if r.Method == http.MethodPost {
+			adminHandler.HandleUpdateCompanySettings(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})))
+	mux.Handle("/admin/settings/test-email", authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			adminHandler.HandleTestEmail(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})))
+
+	// Handle /admin/ redirect specifically
+	mux.HandleFunc("/admin/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/admin/" {
+			http.Redirect(w, r, "/admin", http.StatusMovedPermanently)
+			return
+		}
+		// For other /admin/ paths, let them fall through to the default handler
+		http.NotFound(w, r)
+	})
+
 	// Puzzle management routes
 	mux.HandleFunc("/admin/puzzles/new", func(w http.ResponseWriter, r *http.Request) {
 		authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -181,33 +209,43 @@ func main() {
 		})).ServeHTTP(w, r)
 	})
 
-	// Dynamic puzzle routes
-	mux.HandleFunc("/admin/puzzles/", func(w http.ResponseWriter, r *http.Request) {
-		authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasSuffix(r.URL.Path, "/edit") {
-				if r.Method == http.MethodGet {
-					adminHandler.ShowEditPuzzle(w, r)
-				} else {
-					http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-				}
-			} else if strings.HasSuffix(r.URL.Path, "/delete") {
-				if r.Method == http.MethodPost {
-					adminHandler.HandleDeletePuzzle(w, r)
-				} else {
-					http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-				}
+	// Dynamic puzzle routes (protected)
+	mux.Handle("/admin/puzzles/", authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/codes/export") {
+			if r.Method == http.MethodGet {
+				adminHandler.HandleExportCodes(w, r)
 			} else {
-				// Check if it's an edit POST (no suffix)
-				if r.Method == http.MethodPost {
-					adminHandler.HandleUpdatePuzzle(w, r)
-				} else if r.Method == http.MethodGet {
-					adminHandler.ShowPuzzleDetail(w, r)
-				} else {
-					http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-				}
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 			}
-		})).ServeHTTP(w, r)
-	})
+		} else if strings.HasSuffix(r.URL.Path, "/codes") {
+			if r.Method == http.MethodGet {
+				adminHandler.ShowPuzzleCodes(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		} else if strings.HasSuffix(r.URL.Path, "/edit") {
+			if r.Method == http.MethodGet {
+				adminHandler.ShowEditPuzzle(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		} else if strings.HasSuffix(r.URL.Path, "/delete") {
+			if r.Method == http.MethodPost {
+				adminHandler.HandleDeletePuzzle(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		} else {
+			// Check if it's an edit POST (no suffix)
+			if r.Method == http.MethodPost {
+				adminHandler.HandleUpdatePuzzle(w, r)
+			} else if r.Method == http.MethodGet {
+				adminHandler.ShowPuzzleDetail(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		}
+	})))
 
 	// New puzzle routes (database-driven)
 	mux.HandleFunc("/play/", gameHandler.ServeGameForPuzzle)

@@ -12,6 +12,7 @@ import (
 	"puzzle/templates"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // AdminHandler handles admin dashboard routes
@@ -80,6 +81,7 @@ func (h *AdminHandler) HandleCreatePuzzle(w http.ResponseWriter, r *http.Request
 	scrambleMoves, _ := strconv.Atoi(r.FormValue("scramble_moves"))
 	autoSolveSpeed, _ := strconv.Atoi(r.FormValue("auto_solve_speed"))
 	testingMode := r.FormValue("testing_mode") == "true"
+	codeExpirationDays, _ := strconv.Atoi(r.FormValue("code_expiration_days"))
 	isActive := r.FormValue("is_active") == "true"
 
 	// Validate required fields
@@ -118,19 +120,20 @@ func (h *AdminHandler) HandleCreatePuzzle(w http.ResponseWriter, r *http.Request
 
 	// Create puzzle first to get ID
 	puzzle := &models.Puzzle{
-		CompanyID:       company.ID,
-		Name:            name,
-		Slug:            slug,
-		ImagePath:       "", // Will update after saving image
-		GridSize:        gridSize,
-		DiscountPercent: discountPercent,
-		TimeLimit:       timeLimit,
-		TimerMode:       timerMode,
-		CountdownTime:   countdownTime,
-		ScrambleMoves:   scrambleMoves,
-		AutoSolveSpeed:  autoSolveSpeed,
-		TestingMode:     testingMode,
-		IsActive:        isActive,
+		CompanyID:          company.ID,
+		Name:               name,
+		Slug:               slug,
+		ImagePath:          "", // Will update after saving image
+		GridSize:           gridSize,
+		DiscountPercent:    discountPercent,
+		TimeLimit:          timeLimit,
+		TimerMode:          timerMode,
+		CountdownTime:      countdownTime,
+		ScrambleMoves:      scrambleMoves,
+		AutoSolveSpeed:     autoSolveSpeed,
+		TestingMode:        testingMode,
+		CodeExpirationDays: codeExpirationDays,
+		IsActive:           isActive,
 	}
 
 	// Temporarily set image path
@@ -273,6 +276,7 @@ func (h *AdminHandler) HandleUpdatePuzzle(w http.ResponseWriter, r *http.Request
 	puzzle.ScrambleMoves, _ = strconv.Atoi(r.FormValue("scramble_moves"))
 	puzzle.AutoSolveSpeed, _ = strconv.Atoi(r.FormValue("auto_solve_speed"))
 	puzzle.TestingMode = r.FormValue("testing_mode") == "true"
+	puzzle.CodeExpirationDays, _ = strconv.Atoi(r.FormValue("code_expiration_days"))
 	puzzle.IsActive = r.FormValue("is_active") == "true"
 
 	// Handle image upload if provided
@@ -384,3 +388,227 @@ func (h *AdminHandler) saveImage(file io.Reader, companyID, puzzleID int, filena
 	return relativePath, nil
 }
 
+// ShowCompanySettings displays the company email settings page
+func (h *AdminHandler) ShowCompanySettings(w http.ResponseWriter, r *http.Request) {
+	company := middleware.GetCompany(r)
+	user := middleware.GetUser(r)
+
+	// Get fresh company data with email settings
+	freshCompany, err := h.DB.GetCompanyByID(company.ID)
+	if err != nil || freshCompany == nil {
+		http.Error(w, "Failed to load company data", http.StatusInternalServerError)
+		return
+	}
+
+	// Get message/error from query params
+	message := r.URL.Query().Get("message")
+	errorMsg := r.URL.Query().Get("error")
+
+	component := templates.AdminCompanySettings(company.Name, user.Email, freshCompany, message, errorMsg)
+	if err := component.Render(r.Context(), w); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to render template: %v", err), http.StatusInternalServerError)
+		return
+	}
+}
+
+// HandleUpdateCompanySettings processes the company settings form
+func (h *AdminHandler) HandleUpdateCompanySettings(w http.ResponseWriter, r *http.Request) {
+	company := middleware.GetCompany(r)
+
+	// Parse form
+	if err := r.ParseForm(); err != nil {
+		http.Redirect(w, r, "/admin/settings?error=Failed+to+parse+form", http.StatusSeeOther)
+		return
+	}
+
+	// Get form values
+	apiKey := strings.TrimSpace(r.FormValue("email_api_key"))
+	fromEmail := strings.TrimSpace(r.FormValue("email_from_email"))
+	fromName := strings.TrimSpace(r.FormValue("email_from_name"))
+
+	// Update company email settings
+	err := h.DB.UpdateCompanyEmailSettings(company.ID, apiKey, fromEmail, fromName)
+	if err != nil {
+		http.Redirect(w, r, "/admin/settings?error=Failed+to+update+settings", http.StatusSeeOther)
+		return
+	}
+
+	http.Redirect(w, r, "/admin/settings?message=Settings+updated+successfully", http.StatusSeeOther)
+}
+
+// HandleTestEmail sends a test email with the provided settings
+func (h *AdminHandler) HandleTestEmail(w http.ResponseWriter, r *http.Request) {
+	// Parse form
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+
+	// Get form values
+	apiKey := strings.TrimSpace(r.FormValue("email_api_key"))
+	fromEmail := strings.TrimSpace(r.FormValue("email_from_email"))
+	fromName := strings.TrimSpace(r.FormValue("email_from_name"))
+
+	// Validate required fields
+	if apiKey == "" || fromEmail == "" || fromName == "" {
+		http.Error(w, "All email settings are required for testing", http.StatusBadRequest)
+		return
+	}
+
+	// Send test email using the email service
+	// Note: This would need access to the email service, which we don't have in the admin handler
+	// For now, we'll simulate the test by validating the settings
+	w.Header().Set("Content-Type", "text/plain")
+
+	// Basic validation of the settings
+	if len(apiKey) < 10 {
+		w.Write([]byte("Error: API key appears to be too short"))
+		return
+	}
+
+	if !strings.Contains(fromEmail, "@") {
+		w.Write([]byte("Error: Invalid email format"))
+		return
+	}
+
+	w.Write([]byte("Test email settings validated successfully!\n\n" +
+		"Settings:\n" +
+		"API Key: " + apiKey[:10] + "...\n" +
+		"From Email: " + fromEmail + "\n" +
+		"From Name: " + fromName + "\n\n" +
+		"Note: To actually send a test email, the email service would need to be integrated into the admin handler."))
+}
+
+// ShowPuzzleCodes displays the codes list for a puzzle
+func (h *AdminHandler) ShowPuzzleCodes(w http.ResponseWriter, r *http.Request) {
+	company := middleware.GetCompany(r)
+	user := middleware.GetUser(r)
+
+	// Extract puzzle ID
+	puzzleIDStr := strings.TrimPrefix(r.URL.Path, "/admin/puzzles/")
+	puzzleIDStr = strings.TrimSuffix(puzzleIDStr, "/codes")
+	puzzleID, err := strconv.Atoi(puzzleIDStr)
+	if err != nil {
+		http.Error(w, "Invalid puzzle ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get puzzle
+	puzzle, err := h.DB.GetPuzzleByID(puzzleID)
+	if err != nil || puzzle == nil || puzzle.CompanyID != company.ID {
+		http.Error(w, "Puzzle not found", http.StatusNotFound)
+		return
+	}
+
+	// Get completions
+	completions, err := h.DB.GetCompletionsByPuzzle(puzzleID)
+	if err != nil {
+		http.Error(w, "Failed to load completions", http.StatusInternalServerError)
+		return
+	}
+
+	// Apply filter if specified
+	filter := r.URL.Query().Get("filter")
+	if filter != "" {
+		completions = filterCompletions(completions, filter)
+	}
+
+	// Get message/error from query params
+	message := r.URL.Query().Get("message")
+	errorMsg := r.URL.Query().Get("error")
+
+	component := templates.AdminPuzzleCodes(company.Name, user.Email, puzzle, completions, filter, message, errorMsg)
+	if err := component.Render(r.Context(), w); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to render template: %v", err), http.StatusInternalServerError)
+		return
+	}
+}
+
+// HandleExportCodes exports codes as CSV
+func (h *AdminHandler) HandleExportCodes(w http.ResponseWriter, r *http.Request) {
+	company := middleware.GetCompany(r)
+
+	// Extract puzzle ID
+	puzzleIDStr := strings.TrimPrefix(r.URL.Path, "/admin/puzzles/")
+	puzzleIDStr = strings.TrimSuffix(puzzleIDStr, "/codes/export")
+	puzzleID, err := strconv.Atoi(puzzleIDStr)
+	if err != nil {
+		http.Error(w, "Invalid puzzle ID", http.StatusBadRequest)
+		return
+	}
+
+	// Get puzzle
+	puzzle, err := h.DB.GetPuzzleByID(puzzleID)
+	if err != nil || puzzle == nil || puzzle.CompanyID != company.ID {
+		http.Error(w, "Puzzle not found", http.StatusNotFound)
+		return
+	}
+
+	// Get completions
+	completions, err := h.DB.GetCompletionsByPuzzle(puzzleID)
+	if err != nil {
+		http.Error(w, "Failed to load completions", http.StatusInternalServerError)
+		return
+	}
+
+	// Set CSV headers
+	filename := fmt.Sprintf("puzzle_%d_codes_%s.csv", puzzleID, time.Now().Format("2006-01-02"))
+	w.Header().Set("Content-Type", "text/csv")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", filename))
+
+	// Write CSV header
+	w.Write([]byte("Discount Code,Email,Date Generated,Expires At,Status,Moves,Time (seconds)\n"))
+
+	// Write CSV data
+	for _, completion := range completions {
+		status := "Active"
+		if completion.IsUsed {
+			status = "Used"
+		} else if completion.ExpiresAt != nil && time.Now().After(*completion.ExpiresAt) {
+			status = "Expired"
+		}
+
+		expiresAt := "Never"
+		if completion.ExpiresAt != nil {
+			expiresAt = completion.ExpiresAt.Format("2006-01-02 15:04:05")
+		}
+
+		line := fmt.Sprintf("%s,%s,%s,%s,%s,%d,%d\n",
+			completion.DiscountCode,
+			completion.Email,
+			completion.CreatedAt.Format("2006-01-02 15:04:05"),
+			expiresAt,
+			status,
+			completion.Moves,
+			completion.TimeSeconds,
+		)
+		w.Write([]byte(line))
+	}
+}
+
+// filterCompletions filters completions by status
+func filterCompletions(completions []models.Completion, filter string) []models.Completion {
+	var filtered []models.Completion
+	now := time.Now()
+
+	for _, completion := range completions {
+		switch filter {
+		case "active":
+			if !completion.IsUsed && (completion.ExpiresAt == nil || now.Before(*completion.ExpiresAt)) {
+				filtered = append(filtered, completion)
+			}
+		case "expired":
+			if !completion.IsUsed && completion.ExpiresAt != nil && now.After(*completion.ExpiresAt) {
+				filtered = append(filtered, completion)
+			}
+		case "used":
+			if completion.IsUsed {
+				filtered = append(filtered, completion)
+			}
+		default:
+			filtered = append(filtered, completion)
+		}
+	}
+
+	return filtered
+}

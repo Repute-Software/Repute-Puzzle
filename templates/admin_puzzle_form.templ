@@ -266,6 +266,16 @@ templ PuzzleFormFields(puzzle *models.Puzzle, isEdit bool) {
 	</div>
 	
 	<div class="form-group">
+		<label for="code_expiration_days">Code Expiration (days)</label>
+		if puzzle != nil {
+			<input type="number" id="code_expiration_days" name="code_expiration_days" min="0" value={ fmt.Sprintf("%d", puzzle.CodeExpirationDays) }/>
+		} else {
+			<input type="number" id="code_expiration_days" name="code_expiration_days" min="0" value="0"/>
+		}
+		<div class="hint">0 = codes never expire</div>
+	</div>
+	
+	<div class="form-group">
 		<div class="checkbox-group">
 			<input 
 				type="checkbox" 

@@ -11,13 +11,15 @@ import (
 
 // Completion represents a puzzle completion record
 type Completion struct {
-	ID           int       `json:"id"`
-	PuzzleID     int       `json:"puzzle_id"`
-	Email        string    `json:"email"`
-	DiscountCode string    `json:"discount_code"`
-	Moves        int       `json:"moves"`
-	TimeSeconds  int       `json:"time_seconds"`
-	CreatedAt    time.Time `json:"created_at"`
+	ID           int        `json:"id"`
+	PuzzleID     int        `json:"puzzle_id"`
+	Email        string     `json:"email"`
+	DiscountCode string     `json:"discount_code"`
+	Moves        int        `json:"moves"`
+	TimeSeconds  int        `json:"time_seconds"`
+	ExpiresAt    *time.Time `json:"expires_at"`
+	IsUsed       bool       `json:"is_used"`
+	CreatedAt    time.Time  `json:"created_at"`
 }
 
 // GenerateDiscountCode creates a unique discount code
@@ -35,13 +37,13 @@ func GenerateDiscountCode(discountPercent, puzzleID int) (string, error) {
 }
 
 // SaveCompletion stores a completion record in the database
-func (db *DB) SaveCompletion(puzzleID int, email string, discountCode string, moves, timeSeconds int) error {
+func (db *DB) SaveCompletion(puzzleID int, email string, discountCode string, moves, timeSeconds int, expiresAt *time.Time) error {
 	query := `
-		INSERT INTO completions (puzzle_id, email, discount_code, moves, time_seconds)
-		VALUES (?, ?, ?, ?, ?)
+		INSERT INTO completions (puzzle_id, email, discount_code, moves, time_seconds, expires_at)
+		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
-	_, err := db.Exec(query, puzzleID, email, discountCode, moves, timeSeconds)
+	_, err := db.Exec(query, puzzleID, email, discountCode, moves, timeSeconds, expiresAt)
 	if err != nil {
 		return fmt.Errorf("failed to save completion: %w", err)
 	}
@@ -52,7 +54,7 @@ func (db *DB) SaveCompletion(puzzleID int, email string, discountCode string, mo
 // GetCompletionByCode retrieves a completion by discount code
 func (db *DB) GetCompletionByCode(code string) (*Completion, error) {
 	query := `
-		SELECT id, puzzle_id, email, discount_code, moves, time_seconds, created_at
+		SELECT id, puzzle_id, email, discount_code, moves, time_seconds, expires_at, is_used, created_at
 		FROM completions
 		WHERE discount_code = ?
 	`
@@ -65,6 +67,8 @@ func (db *DB) GetCompletionByCode(code string) (*Completion, error) {
 		&c.DiscountCode,
 		&c.Moves,
 		&c.TimeSeconds,
+		&c.ExpiresAt,
+		&c.IsUsed,
 		&c.CreatedAt,
 	)
 
@@ -81,7 +85,7 @@ func (db *DB) GetCompletionByCode(code string) (*Completion, error) {
 // GetAllCompletions retrieves all completion records
 func (db *DB) GetAllCompletions() ([]Completion, error) {
 	query := `
-		SELECT id, puzzle_id, email, discount_code, moves, time_seconds, created_at
+		SELECT id, puzzle_id, email, discount_code, moves, time_seconds, expires_at, is_used, created_at
 		FROM completions
 		ORDER BY created_at DESC
 	`
@@ -102,6 +106,8 @@ func (db *DB) GetAllCompletions() ([]Completion, error) {
 			&c.DiscountCode,
 			&c.Moves,
 			&c.TimeSeconds,
+			&c.ExpiresAt,
+			&c.IsUsed,
 			&c.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan completion: %w", err)
@@ -115,7 +121,7 @@ func (db *DB) GetAllCompletions() ([]Completion, error) {
 // GetCompletionsByPuzzle retrieves all completions for a specific puzzle
 func (db *DB) GetCompletionsByPuzzle(puzzleID int) ([]Completion, error) {
 	query := `
-		SELECT id, puzzle_id, email, discount_code, moves, time_seconds, created_at
+		SELECT id, puzzle_id, email, discount_code, moves, time_seconds, expires_at, is_used, created_at
 		FROM completions
 		WHERE puzzle_id = ?
 		ORDER BY created_at DESC
@@ -137,6 +143,8 @@ func (db *DB) GetCompletionsByPuzzle(puzzleID int) ([]Completion, error) {
 			&c.DiscountCode,
 			&c.Moves,
 			&c.TimeSeconds,
+			&c.ExpiresAt,
+			&c.IsUsed,
 			&c.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan completion: %w", err)
@@ -150,7 +158,7 @@ func (db *DB) GetCompletionsByPuzzle(puzzleID int) ([]Completion, error) {
 // GetCompletionsByCompany retrieves all completions for a company's puzzles
 func (db *DB) GetCompletionsByCompany(companyID int) ([]Completion, error) {
 	query := `
-		SELECT c.id, c.puzzle_id, c.email, c.discount_code, c.moves, c.time_seconds, c.created_at
+		SELECT c.id, c.puzzle_id, c.email, c.discount_code, c.moves, c.time_seconds, c.expires_at, c.is_used, c.created_at
 		FROM completions c
 		JOIN puzzles p ON p.id = c.puzzle_id
 		WHERE p.company_id = ?
@@ -173,6 +181,8 @@ func (db *DB) GetCompletionsByCompany(companyID int) ([]Completion, error) {
 			&c.DiscountCode,
 			&c.Moves,
 			&c.TimeSeconds,
+			&c.ExpiresAt,
+			&c.IsUsed,
 			&c.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan completion: %w", err)
@@ -181,4 +191,63 @@ func (db *DB) GetCompletionsByCompany(companyID int) ([]Completion, error) {
 	}
 
 	return completions, nil
+}
+
+// IsExpired checks if a completion's discount code has expired
+func (c *Completion) IsExpired() bool {
+	if c.ExpiresAt == nil {
+		return false // No expiration set
+	}
+	return time.Now().After(*c.ExpiresAt)
+}
+
+// MarkAsUsed marks a discount code as used
+func (db *DB) MarkAsUsed(code string) error {
+	query := `
+		UPDATE completions
+		SET is_used = 1
+		WHERE discount_code = ?
+	`
+
+	_, err := db.Exec(query, code)
+	if err != nil {
+		return fmt.Errorf("failed to mark code as used: %w", err)
+	}
+
+	return nil
+}
+
+// GetPuzzleCompletionStats returns statistics for a puzzle
+func (db *DB) GetPuzzleCompletionStats(puzzleID int) (map[string]interface{}, error) {
+	query := `
+		SELECT 
+			COUNT(*) as total_completions,
+			AVG(moves) as avg_moves,
+			AVG(time_seconds) as avg_time
+		FROM completions
+		WHERE puzzle_id = ?
+	`
+
+	var totalCompletions int
+	var avgMoves, avgTime sql.NullFloat64
+
+	err := db.QueryRow(query, puzzleID).Scan(&totalCompletions, &avgMoves, &avgTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get puzzle stats: %w", err)
+	}
+
+	stats := map[string]interface{}{
+		"total_completions": totalCompletions,
+		"avg_moves":         0.0,
+		"avg_time":          0.0,
+	}
+
+	if avgMoves.Valid {
+		stats["avg_moves"] = avgMoves.Float64
+	}
+	if avgTime.Valid {
+		stats["avg_time"] = avgTime.Float64
+	}
+
+	return stats, nil
 }

@@ -81,6 +81,31 @@ templ AdminLayout(title string, companyName string, userEmail string) {
 					color: #666;
 					font-size: 16px;
 				}
+				.nav {
+					background: #f8f9fa;
+					border-bottom: 1px solid #e9ecef;
+					padding: 0;
+				}
+				.nav-content {
+					max-width: 1200px;
+					margin: 0 auto;
+					padding: 0 20px;
+					display: flex;
+					gap: 30px;
+				}
+				.nav-link {
+					display: block;
+					padding: 15px 0;
+					color: #495057;
+					text-decoration: none;
+					font-weight: 500;
+					border-bottom: 3px solid transparent;
+					transition: all 0.2s;
+				}
+				.nav-link:hover {
+					color: #667eea;
+					border-bottom-color: #667eea;
+				}
 			</style>
 		</head>
 		<body>
@@ -94,6 +119,13 @@ templ AdminLayout(title string, companyName string, userEmail string) {
 						</div>
 						<a href="/logout" class="logout-btn">Logout</a>
 					</div>
+				</div>
+			</div>
+			<div class="nav">
+				<div class="nav-content">
+					<a href="/admin" class="nav-link">Dashboard</a>
+					<a href="/admin/puzzles/new" class="nav-link">New Puzzle</a>
+					<a href="/admin/settings" class="nav-link">Settings</a>
 				</div>
 			</div>
 			<div class="container">

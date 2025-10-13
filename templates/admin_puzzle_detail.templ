@@ -173,6 +173,7 @@ templ AdminPuzzleDetail(companyName string, userEmail string, puzzle *models.Puz
 			</div>
 			<div class="header-actions">
 				<a href={ templ.URL(fmt.Sprintf("/admin/puzzles/%d/edit", puzzle.ID)) } class="btn btn-primary">Edit Puzzle</a>
+				<a href={ templ.URL(fmt.Sprintf("/admin/puzzles/%d/codes", puzzle.ID)) } class="btn btn-secondary">View Codes</a>
 				<a href="/admin" class="btn btn-secondary">Back</a>
 			</div>
 		</div>
