@@ -7,13 +7,46 @@ import (
 	"puzzle/templates"
 	"strconv"
 	"strings"
+	"sync"
 )
+
+// EmailJob represents an email to be sent
+type EmailJob struct {
+	Email           string
+	DiscountCode    string
+	DiscountPercent int
+	Lang            string
+}
 
 // CompletionHandler handles puzzle completion and discount code generation
 type CompletionHandler struct {
 	DB           *models.DB
 	Config       *models.Config
 	EmailService *models.EmailService
+	emailQueue   chan EmailJob
+	workerWg     sync.WaitGroup
+}
+
+// startEmailWorkers starts a pool of workers to process email jobs
+func (h *CompletionHandler) startEmailWorkers(numWorkers int) {
+	h.emailQueue = make(chan EmailJob, 100) // Buffer up to 100 email jobs
+	
+	for i := 0; i < numWorkers; i++ {
+		h.workerWg.Add(1)
+		go func(workerID int) {
+			defer h.workerWg.Done()
+			for job := range h.emailQueue {
+				// Send email (email service has its own timeout)
+				if h.EmailService != nil {
+					if err := h.EmailService.SendDiscountCode(job.Email, job.DiscountCode, job.DiscountPercent, job.Lang); err != nil {
+						log.Printf("Worker %d: Failed to send email to %s: %v", workerID, job.Email, err)
+					} else {
+						log.Printf("Worker %d: Successfully sent discount code email to %s", workerID, job.Email)
+					}
+				}
+			}
+		}(i)
+	}
 }
 
 // getTranslations loads translations from form data or defaults to English
@@ -31,11 +64,17 @@ func (h *CompletionHandler) getTranslations(r *http.Request) *models.Translation
 
 // NewCompletionHandler creates a new completion handler
 func NewCompletionHandler(db *models.DB, config *models.Config, emailService *models.EmailService) *CompletionHandler {
-	return &CompletionHandler{
+	handler := &CompletionHandler{
 		DB:           db,
 		Config:       config,
 		EmailService: emailService,
 	}
+	
+	// Start 3 worker goroutines to handle email sending
+	// This prevents unbounded goroutine growth
+	handler.startEmailWorkers(3)
+	
+	return handler
 }
 
 // ServeHTTP handles the completion form submission
@@ -120,18 +159,22 @@ func (h *CompletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Send email with discount code (in background)
+	// Queue email for sending (non-blocking)
 	lang := r.FormValue("lang")
-	if h.EmailService != nil {
-		go func() {
-			// Send email in background (don't block response)
-			if err := h.EmailService.SendDiscountCode(email, discountCode, h.Config.Puzzle.DiscountPercent, lang); err != nil {
-				// Log error but don't fail the request
-				log.Printf("Failed to send email to %s: %v\n", email, err)
-			} else {
-				log.Printf("Successfully sent discount code email to %s\n", email)
-			}
-		}()
+	if h.EmailService != nil && h.emailQueue != nil {
+		// Send to worker queue with non-blocking select
+		select {
+		case h.emailQueue <- EmailJob{
+			Email:           email,
+			DiscountCode:    discountCode,
+			DiscountPercent: h.Config.Puzzle.DiscountPercent,
+			Lang:            lang,
+		}:
+			log.Printf("Email job queued for %s", email)
+		default:
+			// Queue is full, log warning but don't block the response
+			log.Printf("WARNING: Email queue full, could not queue email for %s", email)
+		}
 	}
 
 	// Render success response

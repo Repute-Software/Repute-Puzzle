@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"os"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 )
@@ -44,19 +45,32 @@ type Translations struct {
 	} `yaml:"error"`
 }
 
-// LoadTranslations loads translation strings for the specified language
-func LoadTranslations(lang string) (*Translations, error) {
-	// Default to English
-	if lang == "" {
-		lang = "en"
-	}
+// Translation cache to prevent file descriptor exhaustion
+var (
+	translationCache = make(map[string]*Translations)
+	cacheMutex       sync.RWMutex
+)
 
-	// Validate language (only en and nl supported)
-	if lang != "en" && lang != "nl" {
-		lang = "en"
+// InitTranslationCache pre-loads all translations into memory
+func InitTranslationCache() error {
+	languages := []string{"en", "nl"}
+	
+	for _, lang := range languages {
+		translations, err := loadTranslationFile(lang)
+		if err != nil {
+			return fmt.Errorf("failed to load %s translations: %w", lang, err)
+		}
+		
+		cacheMutex.Lock()
+		translationCache[lang] = translations
+		cacheMutex.Unlock()
 	}
+	
+	return nil
+}
 
-	// Load YAML file
+// loadTranslationFile loads a translation file from disk
+func loadTranslationFile(lang string) (*Translations, error) {
 	filename := fmt.Sprintf("locales/%s.yaml", lang)
 	data, err := os.ReadFile(filename)
 	if err != nil {
@@ -69,4 +83,39 @@ func LoadTranslations(lang string) (*Translations, error) {
 	}
 
 	return &translations, nil
+}
+
+// LoadTranslations loads translation strings for the specified language from cache
+func LoadTranslations(lang string) (*Translations, error) {
+	// Default to English
+	if lang == "" {
+		lang = "en"
+	}
+
+	// Validate language (only en and nl supported)
+	if lang != "en" && lang != "nl" {
+		lang = "en"
+	}
+
+	// Try to get from cache first
+	cacheMutex.RLock()
+	translations, ok := translationCache[lang]
+	cacheMutex.RUnlock()
+
+	if ok {
+		return translations, nil
+	}
+
+	// If not in cache (shouldn't happen after InitTranslationCache), load from file
+	translations, err := loadTranslationFile(lang)
+	if err != nil {
+		return nil, err
+	}
+
+	// Store in cache
+	cacheMutex.Lock()
+	translationCache[lang] = translations
+	cacheMutex.Unlock()
+
+	return translations, nil
 }
