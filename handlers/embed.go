@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -15,54 +16,48 @@ import (
 // EmbedHandler handles the embed page
 type EmbedHandler struct {
 	Config *models.Config
+	DB     *models.DB
 }
 
 // NewEmbedHandler creates a new embed handler
-func NewEmbedHandler(config *models.Config) *EmbedHandler {
-	return &EmbedHandler{Config: config}
+func NewEmbedHandler(config *models.Config, db *models.DB) *EmbedHandler {
+	return &EmbedHandler{
+		Config: config,
+		DB:     db,
+	}
 }
 
-// ServeHTTP handles the embed page request
+// ServeHTTP handles the embed page request (old backward-compatible route)
 func (h *EmbedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Detect language from URL parameter
+	// This is for backward compatibility - uses config.yaml settings
 	lang := r.URL.Query().Get("lang")
 	if lang == "" {
-		lang = "en" // Default to English
+		lang = "en"
 	}
 
-	// Load translations
 	translations, err := models.LoadTranslations(lang)
 	if err != nil {
-		// Fallback to English on error
 		translations, _ = models.LoadTranslations("en")
 		lang = "en"
 	}
 
-	// Get primary color from URL parameter
 	primaryColor := r.URL.Query().Get("primaryColor")
 	if primaryColor == "" {
-		primaryColor = "667eea" // Default color
+		primaryColor = "667eea"
 	}
 
-	// Ensure it doesn't have # prefix
 	primaryColor = strings.TrimPrefix(primaryColor, "#")
-
-	// Validate hex color format (6 characters)
 	if !isValidHexColor(primaryColor) {
-		primaryColor = "667eea" // Fallback to default
+		primaryColor = "667eea"
 	}
-
-	// Add # prefix for CSS
 	primaryColor = "#" + primaryColor
 
-	// Select a random image from the images directory
 	imageURL, err := h.getRandomImage()
 	if err != nil {
 		http.Error(w, translations.Error.NoImages, http.StatusInternalServerError)
 		return
 	}
 
-	// Render the embed template
 	component := templates.Embed(
 		h.Config.Puzzle.GridSize,
 		imageURL,
@@ -75,6 +70,90 @@ func (h *EmbedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		translations,
 		lang,
 		primaryColor,
+		"/complete", // Old route uses /complete
+	)
+
+	if err := component.Render(r.Context(), w); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to render template: %v", err), http.StatusInternalServerError)
+		return
+	}
+}
+
+// ServeEmbedForPuzzle serves the embed page for a specific puzzle from database
+func (h *EmbedHandler) ServeEmbedForPuzzle(w http.ResponseWriter, r *http.Request) {
+	// Extract company and puzzle slugs from URL path
+	// Expected format: /embed/:companySlug/:puzzleSlug
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(pathParts) < 3 {
+		http.Error(w, "Invalid URL format", http.StatusBadRequest)
+		return
+	}
+
+	companySlug := pathParts[1]
+	puzzleSlug := pathParts[2]
+
+	// Get puzzle from database
+	puzzle, err := h.DB.GetPuzzleBySlug(companySlug, puzzleSlug)
+	if err != nil {
+		log.Printf("Error loading puzzle %s/%s: %v", companySlug, puzzleSlug, err)
+		http.Error(w, "Failed to load puzzle", http.StatusInternalServerError)
+		return
+	}
+
+	if puzzle == nil {
+		http.Error(w, "Puzzle not found", http.StatusNotFound)
+		return
+	}
+
+	if !puzzle.IsActive {
+		http.Error(w, "This puzzle is not currently active", http.StatusForbidden)
+		return
+	}
+
+	// Get language
+	lang := r.URL.Query().Get("lang")
+	if lang == "" {
+		lang = "en"
+	}
+
+	translations, err := models.LoadTranslations(lang)
+	if err != nil {
+		translations, _ = models.LoadTranslations("en")
+		lang = "en"
+	}
+
+	// Get primary color from URL parameter
+	primaryColor := r.URL.Query().Get("primaryColor")
+	if primaryColor == "" {
+		primaryColor = "667eea"
+	}
+
+	primaryColor = strings.TrimPrefix(primaryColor, "#")
+	if !isValidHexColor(primaryColor) {
+		primaryColor = "667eea"
+	}
+	primaryColor = "#" + primaryColor
+
+	// Build image URL from puzzle data
+	imageURL := "/images" + puzzle.ImagePath
+
+	// Build completion URL for this puzzle
+	completionURL := fmt.Sprintf("/complete/%s/%s", companySlug, puzzleSlug)
+
+	// Render the embed template with puzzle settings
+	component := templates.Embed(
+		puzzle.GridSize,
+		imageURL,
+		puzzle.TimeLimit,
+		puzzle.TimerMode,
+		puzzle.CountdownTime,
+		puzzle.TestingMode, // Use puzzle's testing mode setting
+		puzzle.ScrambleMoves,
+		puzzle.AutoSolveSpeed,
+		translations,
+		lang,
+		primaryColor,
+		completionURL,
 	)
 
 	if err := component.Render(r.Context(), w); err != nil {

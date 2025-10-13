@@ -20,6 +20,7 @@ type Puzzle struct {
 	CountdownTime   int       `json:"countdown_time"`
 	ScrambleMoves   int       `json:"scramble_moves"`
 	AutoSolveSpeed  int       `json:"auto_solve_speed"`
+	TestingMode     bool      `json:"testing_mode"`
 	IsActive        bool      `json:"is_active"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
@@ -30,13 +31,13 @@ func (db *DB) CreatePuzzle(p *Puzzle) (*Puzzle, error) {
 	query := `
 		INSERT INTO puzzles (
 			company_id, name, slug, image_path, grid_size, discount_percent,
-			time_limit, timer_mode, countdown_time, scramble_moves, auto_solve_speed, is_active
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			time_limit, timer_mode, countdown_time, scramble_moves, auto_solve_speed, testing_mode, is_active
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := db.Exec(query,
 		p.CompanyID, p.Name, p.Slug, p.ImagePath, p.GridSize, p.DiscountPercent,
-		p.TimeLimit, p.TimerMode, p.CountdownTime, p.ScrambleMoves, p.AutoSolveSpeed, p.IsActive,
+		p.TimeLimit, p.TimerMode, p.CountdownTime, p.ScrambleMoves, p.AutoSolveSpeed, p.TestingMode, p.IsActive,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create puzzle: %w", err)
@@ -54,7 +55,7 @@ func (db *DB) CreatePuzzle(p *Puzzle) (*Puzzle, error) {
 func (db *DB) GetPuzzleByID(id int) (*Puzzle, error) {
 	query := `
 		SELECT id, company_id, name, slug, image_path, grid_size, discount_percent,
-		       time_limit, timer_mode, countdown_time, scramble_moves, auto_solve_speed,
+		       time_limit, timer_mode, countdown_time, scramble_moves, auto_solve_speed, testing_mode,
 		       is_active, created_at, updated_at
 		FROM puzzles
 		WHERE id = ?
@@ -63,7 +64,7 @@ func (db *DB) GetPuzzleByID(id int) (*Puzzle, error) {
 	var p Puzzle
 	err := db.QueryRow(query, id).Scan(
 		&p.ID, &p.CompanyID, &p.Name, &p.Slug, &p.ImagePath, &p.GridSize, &p.DiscountPercent,
-		&p.TimeLimit, &p.TimerMode, &p.CountdownTime, &p.ScrambleMoves, &p.AutoSolveSpeed,
+		&p.TimeLimit, &p.TimerMode, &p.CountdownTime, &p.ScrambleMoves, &p.AutoSolveSpeed, &p.TestingMode,
 		&p.IsActive, &p.CreatedAt, &p.UpdatedAt,
 	)
 
@@ -81,7 +82,7 @@ func (db *DB) GetPuzzleByID(id int) (*Puzzle, error) {
 func (db *DB) GetPuzzleBySlug(companySlug, puzzleSlug string) (*Puzzle, error) {
 	query := `
 		SELECT p.id, p.company_id, p.name, p.slug, p.image_path, p.grid_size, p.discount_percent,
-		       p.time_limit, p.timer_mode, p.countdown_time, p.scramble_moves, p.auto_solve_speed,
+		       p.time_limit, p.timer_mode, p.countdown_time, p.scramble_moves, p.auto_solve_speed, p.testing_mode,
 		       p.is_active, p.created_at, p.updated_at
 		FROM puzzles p
 		JOIN companies c ON c.id = p.company_id
@@ -91,7 +92,7 @@ func (db *DB) GetPuzzleBySlug(companySlug, puzzleSlug string) (*Puzzle, error) {
 	var p Puzzle
 	err := db.QueryRow(query, companySlug, puzzleSlug).Scan(
 		&p.ID, &p.CompanyID, &p.Name, &p.Slug, &p.ImagePath, &p.GridSize, &p.DiscountPercent,
-		&p.TimeLimit, &p.TimerMode, &p.CountdownTime, &p.ScrambleMoves, &p.AutoSolveSpeed,
+		&p.TimeLimit, &p.TimerMode, &p.CountdownTime, &p.ScrambleMoves, &p.AutoSolveSpeed, &p.TestingMode,
 		&p.IsActive, &p.CreatedAt, &p.UpdatedAt,
 	)
 
@@ -109,7 +110,7 @@ func (db *DB) GetPuzzleBySlug(companySlug, puzzleSlug string) (*Puzzle, error) {
 func (db *DB) GetPuzzlesByCompany(companyID int) ([]Puzzle, error) {
 	query := `
 		SELECT id, company_id, name, slug, image_path, grid_size, discount_percent,
-		       time_limit, timer_mode, countdown_time, scramble_moves, auto_solve_speed,
+		       time_limit, timer_mode, countdown_time, scramble_moves, auto_solve_speed, testing_mode,
 		       is_active, created_at, updated_at
 		FROM puzzles
 		WHERE company_id = ?
@@ -127,7 +128,7 @@ func (db *DB) GetPuzzlesByCompany(companyID int) ([]Puzzle, error) {
 		var p Puzzle
 		if err := rows.Scan(
 			&p.ID, &p.CompanyID, &p.Name, &p.Slug, &p.ImagePath, &p.GridSize, &p.DiscountPercent,
-			&p.TimeLimit, &p.TimerMode, &p.CountdownTime, &p.ScrambleMoves, &p.AutoSolveSpeed,
+			&p.TimeLimit, &p.TimerMode, &p.CountdownTime, &p.ScrambleMoves, &p.AutoSolveSpeed, &p.TestingMode,
 			&p.IsActive, &p.CreatedAt, &p.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan puzzle: %w", err)
@@ -144,14 +145,14 @@ func (db *DB) UpdatePuzzle(p *Puzzle) error {
 		UPDATE puzzles
 		SET name = ?, slug = ?, image_path = ?, grid_size = ?, discount_percent = ?,
 		    time_limit = ?, timer_mode = ?, countdown_time = ?, scramble_moves = ?,
-		    auto_solve_speed = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
+		    auto_solve_speed = ?, testing_mode = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND company_id = ?
 	`
 
 	_, err := db.Exec(query,
 		p.Name, p.Slug, p.ImagePath, p.GridSize, p.DiscountPercent,
 		p.TimeLimit, p.TimerMode, p.CountdownTime, p.ScrambleMoves,
-		p.AutoSolveSpeed, p.IsActive,
+		p.AutoSolveSpeed, p.TestingMode, p.IsActive,
 		p.ID, p.CompanyID,
 	)
 	if err != nil {

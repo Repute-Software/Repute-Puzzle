@@ -5,7 +5,7 @@ import (
 	"puzzle/models"
 )
 
-templ Embed(gridSize int, imageURL string, timeLimit int, timerMode string, countdownTime int, testingMode bool, scrambleMoves int, autoSolveSpeed int, t *models.Translations, lang string, primaryColor string) {
+templ Embed(gridSize int, imageURL string, timeLimit int, timerMode string, countdownTime int, testingMode bool, scrambleMoves int, autoSolveSpeed int, t *models.Translations, lang string, primaryColor string, completionURL string) {
 	@Layout(t.Game.Title) {
 		<div class="game-container embed-mode" data-embed="true" data-primary-color={ primaryColor }>
 			<div class="game-stats">
@@ -53,7 +53,7 @@ templ Embed(gridSize int, imageURL string, timeLimit int, timerMode string, coun
 					<span>{ t.Modal.MovesLabel }: <strong id="final-moves">0</strong></span>
 					<span>{ t.Modal.TimeLabel }: <strong id="final-time">0:00</strong></span>
 				</p>
-				<form id="email-form" hx-post="/complete" hx-target="#email-form" hx-swap="outerHTML swap:500ms settle:500ms scroll:smooth">
+				<form id="email-form" hx-post={ completionURL } hx-target="#email-form" hx-swap="outerHTML swap:500ms settle:500ms scroll:smooth">
 					<div class="form-group">
 						<label for="email">{ t.Modal.EmailPrompt }</label>
 						<input type="email" id="email" name="email" required placeholder={ t.Modal.EmailPlaceholder }/>

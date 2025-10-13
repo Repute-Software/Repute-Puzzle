@@ -11,6 +11,7 @@ import (
 	"puzzle/middleware"
 	"puzzle/models"
 	"runtime/debug"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -115,10 +116,11 @@ func main() {
 	log.Println("Translation cache initialized")
 
 	// Create handlers
-	gameHandler := handlers.NewGameHandler(config)
-	embedHandler := handlers.NewEmbedHandler(config)
+	gameHandler := handlers.NewGameHandler(config, db)
+	embedHandler := handlers.NewEmbedHandler(config, db)
 	completionHandler := handlers.NewCompletionHandler(db, config, emailService)
 	authHandler := handlers.NewAuthHandler(db, config)
+	adminHandler := handlers.NewAdminHandler(db, config)
 
 	// Create middleware
 	authMiddleware := middleware.NewAuthMiddleware(db)
@@ -155,27 +157,66 @@ func main() {
 
 	mux.Handle("/logout", authMiddleware.RequireAuth(http.HandlerFunc(authHandler.HandleLogout)))
 
-	// Admin routes (protected) - Placeholder for now
-	mux.Handle("/admin", authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := middleware.GetUser(r)
-		company := middleware.GetCompany(r)
-		fmt.Fprintf(w, "Welcome to admin dashboard, %s from %s!", user.Email, company.Name)
-	})))
+	// Admin routes (protected)
+	mux.Handle("/admin", authMiddleware.RequireAuth(http.HandlerFunc(adminHandler.ShowDashboard)))
 
-	// Admin subroutes with auth middleware
-	mux.Handle("/admin/", authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		user := middleware.GetUser(r)
-		company := middleware.GetCompany(r)
-		fmt.Fprintf(w, "Admin area for %s (%s)", company.Name, user.Email)
-	})))
+	// Puzzle management routes
+	mux.HandleFunc("/admin/puzzles/new", func(w http.ResponseWriter, r *http.Request) {
+		authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet {
+				adminHandler.ShowCreatePuzzle(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		})).ServeHTTP(w, r)
+	})
 
-	// Game page (old route - for backward compatibility)
+	mux.HandleFunc("/admin/puzzles", func(w http.ResponseWriter, r *http.Request) {
+		authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodPost {
+				adminHandler.HandleCreatePuzzle(w, r)
+			} else {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+		})).ServeHTTP(w, r)
+	})
+
+	// Dynamic puzzle routes
+	mux.HandleFunc("/admin/puzzles/", func(w http.ResponseWriter, r *http.Request) {
+		authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/edit") {
+				if r.Method == http.MethodGet {
+					adminHandler.ShowEditPuzzle(w, r)
+				} else {
+					http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				}
+			} else if strings.HasSuffix(r.URL.Path, "/delete") {
+				if r.Method == http.MethodPost {
+					adminHandler.HandleDeletePuzzle(w, r)
+				} else {
+					http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				}
+			} else {
+				// Check if it's an edit POST (no suffix)
+				if r.Method == http.MethodPost {
+					adminHandler.HandleUpdatePuzzle(w, r)
+				} else if r.Method == http.MethodGet {
+					adminHandler.ShowPuzzleDetail(w, r)
+				} else {
+					http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+				}
+			}
+		})).ServeHTTP(w, r)
+	})
+
+	// New puzzle routes (database-driven)
+	mux.HandleFunc("/play/", gameHandler.ServeGameForPuzzle)
+	mux.HandleFunc("/embed/", embedHandler.ServeEmbedForPuzzle)
+	mux.HandleFunc("/complete/", completionHandler.ServeCompletionForPuzzle)
+
+	// Old routes (backward compatibility - uses config.yaml)
 	mux.Handle("/", gameHandler)
-
-	// Embed page (old route - for backward compatibility)
 	mux.Handle("/embed", embedHandler)
-
-	// Completion endpoint (old route - for backward compatibility)
 	mux.Handle("/complete", completionHandler)
 
 	// Static files (CSS, JS)

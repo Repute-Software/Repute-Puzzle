@@ -105,6 +105,7 @@ func createTables(db *sql.DB) error {
 		countdown_time INTEGER DEFAULT 15,
 		scramble_moves INTEGER DEFAULT 25,
 		auto_solve_speed INTEGER DEFAULT 50,
+		testing_mode BOOLEAN DEFAULT 0,
 		is_active BOOLEAN DEFAULT 1,
 		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

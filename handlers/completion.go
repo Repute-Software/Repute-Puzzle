@@ -30,7 +30,7 @@ type CompletionHandler struct {
 // startEmailWorkers starts a pool of workers to process email jobs
 func (h *CompletionHandler) startEmailWorkers(numWorkers int) {
 	h.emailQueue = make(chan EmailJob, 100) // Buffer up to 100 email jobs
-	
+
 	for i := 0; i < numWorkers; i++ {
 		h.workerWg.Add(1)
 		go func(workerID int) {
@@ -69,21 +69,62 @@ func NewCompletionHandler(db *models.DB, config *models.Config, emailService *mo
 		Config:       config,
 		EmailService: emailService,
 	}
-	
+
 	// Start 3 worker goroutines to handle email sending
 	// This prevents unbounded goroutine growth
 	handler.startEmailWorkers(3)
-	
+
 	return handler
 }
 
-// ServeHTTP handles the completion form submission
+// ServeHTTP handles the completion form submission (old backward-compatible route)
 func (h *CompletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// For backward compatibility - uses puzzle_id = 1 and config.yaml discount
+	h.handleCompletion(w, r, 1, h.Config.Puzzle.DiscountPercent)
+}
+
+// ServeCompletionForPuzzle handles completion for a specific puzzle from database
+func (h *CompletionHandler) ServeCompletionForPuzzle(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
+	// Extract company and puzzle slugs from URL path
+	// Expected format: /complete/:companySlug/:puzzleSlug
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(pathParts) < 3 {
+		http.Error(w, "Invalid URL format", http.StatusBadRequest)
+		return
+	}
+
+	companySlug := pathParts[1]
+	puzzleSlug := pathParts[2]
+
+	// Get puzzle from database
+	puzzle, err := h.DB.GetPuzzleBySlug(companySlug, puzzleSlug)
+	if err != nil {
+		log.Printf("Error loading puzzle %s/%s: %v", companySlug, puzzleSlug, err)
+		http.Error(w, "Failed to load puzzle", http.StatusInternalServerError)
+		return
+	}
+
+	if puzzle == nil {
+		http.Error(w, "Puzzle not found", http.StatusNotFound)
+		return
+	}
+
+	if !puzzle.IsActive {
+		http.Error(w, "This puzzle is not currently active", http.StatusForbidden)
+		return
+	}
+
+	// Handle completion with puzzle's settings
+	h.handleCompletion(w, r, puzzle.ID, puzzle.DiscountPercent)
+}
+
+// handleCompletion is the shared completion logic
+func (h *CompletionHandler) handleCompletion(w http.ResponseWriter, r *http.Request, puzzleID int, discountPercent int) {
 	// Parse form data
 	if err := r.ParseForm(); err != nil {
 		h.renderError(w, r, "Failed to parse form data")
@@ -117,16 +158,12 @@ func (h *CompletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: This is temporary - will be replaced with proper puzzle lookup
-	// For now, use puzzle_id = 1 (default puzzle) for backward compatibility
-	puzzleID := 1
-
 	// Generate unique discount code
 	var discountCode string
 	maxRetries := 10
 
 	for i := 0; i < maxRetries; i++ {
-		code, err := models.GenerateDiscountCode(h.Config.Puzzle.DiscountPercent, puzzleID)
+		code, err := models.GenerateDiscountCode(discountPercent, puzzleID)
 		if err != nil {
 			h.renderErrorWithTranslations(w, r, translations.Error.FailedGenerate, translations)
 			return
@@ -171,10 +208,10 @@ func (h *CompletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case h.emailQueue <- EmailJob{
 			Email:           email,
 			DiscountCode:    discountCode,
-			DiscountPercent: h.Config.Puzzle.DiscountPercent,
+			DiscountPercent: discountPercent,
 			Lang:            lang,
 		}:
-			log.Printf("Email job queued for %s", email)
+			log.Printf("Email job queued for %s (puzzle %d)", email, puzzleID)
 		default:
 			// Queue is full, log warning but don't block the response
 			log.Printf("WARNING: Email queue full, could not queue email for %s", email)
@@ -182,7 +219,7 @@ func (h *CompletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Render success response
-	component := templates.CompletionSuccess(discountCode, h.Config.Puzzle.DiscountPercent, translations)
+	component := templates.CompletionSuccess(discountCode, discountPercent, translations)
 	if err := component.Render(r.Context(), w); err != nil {
 		http.Error(w, "Failed to render response", http.StatusInternalServerError)
 	}

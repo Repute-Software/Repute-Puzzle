@@ -269,6 +269,19 @@ templ PuzzleFormFields(puzzle *models.Puzzle, isEdit bool) {
 		<div class="checkbox-group">
 			<input 
 				type="checkbox" 
+				id="testing_mode" 
+				name="testing_mode" 
+				value="true"
+				checked?={ puzzle != nil && puzzle.TestingMode }
+			/>
+			<label for="testing_mode" style="margin-bottom: 0;">Enable Testing Mode (shows auto-solve button)</label>
+		</div>
+	</div>
+	
+	<div class="form-group">
+		<div class="checkbox-group">
+			<input 
+				type="checkbox" 
 				id="is_active" 
 				name="is_active" 
 				value="true"
