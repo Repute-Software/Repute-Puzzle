@@ -139,9 +139,9 @@ func main() {
 	// Wait for interrupt signal for graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
+	sig := <-quit
 
-	log.Println("Shutting down server...")
+	log.Printf("Received signal: %v - initiating graceful shutdown...", sig)
 
 	// Graceful shutdown with 10 second timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -149,7 +149,9 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 		log.Printf("Server forced to shutdown: %v", err)
+		os.Exit(1)
 	}
 
-	log.Println("Server stopped")
+	log.Println("Server stopped gracefully")
+	os.Exit(0)
 }
