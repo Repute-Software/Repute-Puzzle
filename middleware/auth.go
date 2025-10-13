@@ -36,11 +36,13 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 		cookie, err := r.Cookie("session_id")
 		if err != nil {
 			// No session cookie, redirect to login
+			log.Printf("No session cookie for %s, redirecting to login", r.URL.Path)
 			http.Redirect(w, r, "/login?redirect="+r.URL.Path, http.StatusSeeOther)
 			return
 		}
 
 		// Validate session
+		log.Printf("Validating session %s for %s", cookie.Value[:10]+"...", r.URL.Path)
 		sessionWithUser, err := m.DB.GetSessionWithUser(cookie.Value)
 		if err != nil {
 			log.Printf("Error getting session: %v", err)
@@ -50,6 +52,7 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 
 		if sessionWithUser == nil {
 			// Session not found or expired
+			log.Printf("Session invalid or expired for %s", r.URL.Path)
 			// Clear the invalid cookie
 			http.SetCookie(w, &http.Cookie{
 				Name:     "session_id",
@@ -61,6 +64,8 @@ func (m *AuthMiddleware) RequireAuth(next http.Handler) http.Handler {
 			http.Redirect(w, r, "/login?redirect="+r.URL.Path, http.StatusSeeOther)
 			return
 		}
+
+		log.Printf("Session valid for user %s accessing %s", sessionWithUser.User.Email, r.URL.Path)
 
 		// Inject user, company, and session into request context
 		ctx := r.Context()
@@ -128,4 +133,3 @@ func GetSession(r *http.Request) *models.Session {
 	}
 	return session
 }
-

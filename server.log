@@ -1,0 +1,23 @@
+2025/10/13 14:38:29 Starting Repute Puzzle application...
+2025/10/13 14:38:29 Database initialized successfully
+2025/10/13 14:38:29 Email service enabled (sending from: noreply@repute-software.com)
+2025/10/13 14:38:29 Translation cache initialized
+2025/10/13 14:38:29 Starting server on http://localhost:8080
+2025/10/13 14:38:29 Puzzle configuration: 3x3 grid, 15% discount
+2025/10/13 14:38:45 GET /login - 57.25µs
+2025/10/13 14:38:54 Login attempt for: doubleutech@proton.me
+2025/10/13 14:38:54 Invalid credentials for: doubleutech@proton.me
+2025/10/13 14:38:54 POST /login - 184.301491ms
+2025/10/13 14:38:54 GET /login - 42.69µs
+2025/10/13 14:38:57 GET /signup - 48.12µs
+2025/10/13 14:39:21 POST /signup - 107.459µs
+2025/10/13 14:39:21 GET /signup - 30.33µs
+2025/10/13 14:39:31 GET /login - 35.219µs
+2025/10/13 14:39:37 Login attempt for: doubleutech@proton.me
+2025/10/13 14:39:37 User doubleutech@proton.me authenticated successfully, creating session...
+2025/10/13 14:39:37 Session created for doubleutech@proton.me: cda014abbda8cd682233b7cd3e3a8ba1955c087445b90c436050337472635e2f
+2025/10/13 14:39:37 Redirecting doubleutech@proton.me to: /admin
+2025/10/13 14:39:37 POST /login - 185.150161ms
+2025/10/13 14:39:37 Validating session cda014abbd... for /admin
+2025/10/13 14:39:37 Session valid for user doubleutech@proton.me accessing /admin
+2025/10/13 14:39:37 GET /admin - 172.87µs

@@ -161,7 +161,7 @@ func main() {
 		company := middleware.GetCompany(r)
 		fmt.Fprintf(w, "Welcome to admin dashboard, %s from %s!", user.Email, company.Name)
 	})))
-	
+
 	// Admin subroutes with auth middleware
 	mux.Handle("/admin/", authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		user := middleware.GetUser(r)

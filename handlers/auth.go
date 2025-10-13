@@ -67,27 +67,31 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authenticate user
+	log.Printf("Login attempt for: %s", email)
 	user, err := h.DB.AuthenticateUser(email, password)
 	if err != nil {
-		log.Printf("Authentication error: %v", err)
+		log.Printf("Authentication error for %s: %v", email, err)
 		http.Redirect(w, r, "/login?error=Authentication+failed", http.StatusSeeOther)
 		return
 	}
 
 	if user == nil {
+		log.Printf("Invalid credentials for: %s", email)
 		http.Redirect(w, r, "/login?error=Invalid+email+or+password", http.StatusSeeOther)
 		return
 	}
 
 	// Create session (7 days)
+	log.Printf("User %s authenticated successfully, creating session...", email)
 	session, err := h.DB.CreateSession(user.ID, 7*24*time.Hour)
 	if err != nil {
-		log.Printf("Failed to create session: %v", err)
+		log.Printf("Failed to create session for %s: %v", email, err)
 		http.Redirect(w, r, "/login?error=Failed+to+create+session", http.StatusSeeOther)
 		return
 	}
 
 	// Set session cookie
+	log.Printf("Session created for %s: %s", email, session.ID)
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_id",
 		Value:    session.ID,
@@ -100,8 +104,10 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	// Redirect to destination
 	if redirectURL != "" && strings.HasPrefix(redirectURL, "/") {
+		log.Printf("Redirecting %s to: %s", email, redirectURL)
 		http.Redirect(w, r, redirectURL, http.StatusSeeOther)
 	} else {
+		log.Printf("Redirecting %s to: /admin", email)
 		http.Redirect(w, r, "/admin", http.StatusSeeOther)
 	}
 }
@@ -256,4 +262,3 @@ func (h *AuthHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 	// Redirect to login
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
-
