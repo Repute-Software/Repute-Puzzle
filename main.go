@@ -36,6 +36,40 @@ func loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// writeCrashdump writes shutdown information to a persistent log file
+func writeCrashdump(sig os.Signal, shutdownErr error) {
+	logDir := "/app/logs"
+	logFile := logDir + "/crashdump.txt"
+
+	// Create log directory if it doesn't exist
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		log.Printf("Failed to create log directory: %v", err)
+		return
+	}
+
+	// Open file in append mode, create if doesn't exist
+	f, err := os.OpenFile(logFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Failed to open crashdump file: %v", err)
+		return
+	}
+	defer f.Close()
+
+	// Format log entry
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
+	status := "graceful shutdown"
+	if shutdownErr != nil {
+		status = fmt.Sprintf("forced shutdown: %v", shutdownErr)
+	}
+
+	logEntry := fmt.Sprintf("%s | Signal: %v | Status: %s\n", timestamp, sig, status)
+
+	// Write to file
+	if _, err := f.WriteString(logEntry); err != nil {
+		log.Printf("Failed to write crashdump: %v", err)
+	}
+}
+
 func main() {
 	log.Println("Starting Repute Puzzle application...")
 
@@ -149,9 +183,11 @@ func main() {
 
 	if err := server.Shutdown(ctx); err != nil {
 		log.Printf("Server forced to shutdown: %v", err)
+		writeCrashdump(sig, err)
 		os.Exit(1)
 	}
 
 	log.Println("Server stopped gracefully")
+	writeCrashdump(sig, nil)
 	os.Exit(0)
 }

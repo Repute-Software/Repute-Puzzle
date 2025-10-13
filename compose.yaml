@@ -9,6 +9,8 @@ services:
       - ./images:/app/images:ro
       # Mount data directory for database persistence
       - ./data:/app/data
+      # Mount logs directory for crash dumps
+      - ./logs:/app/logs
       # Mount config for easy configuration changes
       - ./config.yaml:/app/config.yaml:ro
     restart: unless-stopped

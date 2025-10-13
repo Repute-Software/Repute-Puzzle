@@ -41,7 +41,7 @@ COPY --from=builder /app/locales ./locales
 COPY --from=builder /app/config.example.yaml ./config.yaml
 
 # Create necessary directories
-RUN mkdir -p /app/data /app/images
+RUN mkdir -p /app/data /app/images /app/logs
 
 # Expose port
 EXPOSE 8080
