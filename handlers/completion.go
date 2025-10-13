@@ -117,12 +117,16 @@ func (h *CompletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: This is temporary - will be replaced with proper puzzle lookup
+	// For now, use puzzle_id = 1 (default puzzle) for backward compatibility
+	puzzleID := 1
+
 	// Generate unique discount code
 	var discountCode string
 	maxRetries := 10
 
 	for i := 0; i < maxRetries; i++ {
-		code, err := models.GenerateDiscountCode(h.Config.Puzzle.DiscountPercent)
+		code, err := models.GenerateDiscountCode(h.Config.Puzzle.DiscountPercent, puzzleID)
 		if err != nil {
 			h.renderErrorWithTranslations(w, r, translations.Error.FailedGenerate, translations)
 			return
@@ -148,9 +152,9 @@ func (h *CompletionHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Save completion to database
 	err = h.DB.SaveCompletion(
+		puzzleID,
 		email,
 		discountCode,
-		h.Config.Puzzle.GridSize,
 		moves,
 		timeSeconds,
 	)

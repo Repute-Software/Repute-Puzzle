@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"puzzle/handlers"
+	"puzzle/middleware"
 	"puzzle/models"
 	"runtime/debug"
 	"syscall"
@@ -117,6 +118,10 @@ func main() {
 	gameHandler := handlers.NewGameHandler(config)
 	embedHandler := handlers.NewEmbedHandler(config)
 	completionHandler := handlers.NewCompletionHandler(db, config, emailService)
+	authHandler := handlers.NewAuthHandler(db, config)
+
+	// Create middleware
+	authMiddleware := middleware.NewAuthMiddleware(db)
 
 	// Set up routes
 	mux := http.NewServeMux()
@@ -127,13 +132,54 @@ func main() {
 		fmt.Fprintf(w, "OK")
 	})
 
-	// Game page
+	// Auth routes (public)
+	mux.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			authHandler.ShowLogin(w, r)
+		} else if r.Method == http.MethodPost {
+			authHandler.HandleLogin(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.HandleFunc("/signup", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			authHandler.ShowSignup(w, r)
+		} else if r.Method == http.MethodPost {
+			authHandler.HandleSignup(w, r)
+		} else {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	mux.Handle("/logout", authMiddleware.RequireAuth(http.HandlerFunc(authHandler.HandleLogout)))
+
+	// Admin routes (protected) - Placeholder for now
+	mux.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
+		user := middleware.GetUser(r)
+		company := middleware.GetCompany(r)
+		if user == nil || company == nil {
+			http.Redirect(w, r, "/login?redirect=/admin", http.StatusSeeOther)
+			return
+		}
+		fmt.Fprintf(w, "Welcome to admin dashboard, %s from %s!", user.Email, company.Name)
+	})
+	
+	// Wrap admin route with auth middleware
+	mux.Handle("/admin/", authMiddleware.RequireAuth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := middleware.GetUser(r)
+		company := middleware.GetCompany(r)
+		fmt.Fprintf(w, "Admin area for %s (%s)", company.Name, user.Email)
+	})))
+
+	// Game page (old route - for backward compatibility)
 	mux.Handle("/", gameHandler)
 
-	// Embed page
+	// Embed page (old route - for backward compatibility)
 	mux.Handle("/embed", embedHandler)
 
-	// Completion endpoint
+	// Completion endpoint (old route - for backward compatibility)
 	mux.Handle("/complete", completionHandler)
 
 	// Static files (CSS, JS)
