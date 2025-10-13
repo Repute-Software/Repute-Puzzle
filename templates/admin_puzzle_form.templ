@@ -1,0 +1,291 @@
+package templates
+
+import "puzzle/models"
+import "fmt"
+
+templ AdminPuzzleFormCreate(companyName string, userEmail string, errorMsg string) {
+	@AdminLayout("Create Puzzle", companyName, userEmail) {
+		@PuzzleForm(nil, errorMsg, false)
+	}
+}
+
+templ AdminPuzzleFormEdit(companyName string, userEmail string, puzzle *models.Puzzle, errorMsg string) {
+	@AdminLayout("Edit Puzzle", companyName, userEmail) {
+		@PuzzleForm(puzzle, errorMsg, true)
+	}
+}
+
+templ PuzzleForm(puzzle *models.Puzzle, errorMsg string, isEdit bool) {
+	<div class="page-header">
+		<h2 class="page-title">
+			if isEdit {
+				Edit Puzzle
+			} else {
+				Create New Puzzle
+			}
+		</h2>
+		<p class="page-subtitle">Configure your interactive puzzle settings</p>
+	</div>
+	
+	<style>
+		.form-container {
+			background: white;
+			border-radius: 12px;
+			padding: 40px;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+			max-width: 800px;
+		}
+		.error {
+			background: #fee;
+			border: 1px solid #fcc;
+			color: #c33;
+			padding: 12px;
+			border-radius: 6px;
+			margin-bottom: 20px;
+			font-size: 14px;
+		}
+		.form-group {
+			margin-bottom: 24px;
+		}
+		label {
+			display: block;
+			margin-bottom: 8px;
+			color: #333;
+			font-weight: 600;
+			font-size: 14px;
+		}
+		.label-hint {
+			font-weight: 400;
+			color: #999;
+			font-size: 13px;
+			margin-left: 8px;
+		}
+		input[type="text"],
+		input[type="number"],
+		input[type="file"],
+		select {
+			width: 100%;
+			padding: 12px;
+			border: 2px solid #e0e0e0;
+			border-radius: 6px;
+			font-size: 14px;
+			transition: border-color 0.3s;
+		}
+		input[type="text"]:focus,
+		input[type="number"]:focus,
+		select:focus {
+			outline: none;
+			border-color: #667eea;
+		}
+		.form-row {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 20px;
+		}
+		.hint {
+			font-size: 13px;
+			color: #666;
+			margin-top: 6px;
+		}
+		.checkbox-group {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+		input[type="checkbox"] {
+			width: 20px;
+			height: 20px;
+			cursor: pointer;
+		}
+		.form-actions {
+			display: flex;
+			gap: 12px;
+			margin-top: 30px;
+			padding-top: 30px;
+			border-top: 1px solid #e0e0e0;
+		}
+		.btn {
+			padding: 12px 24px;
+			border-radius: 8px;
+			font-size: 16px;
+			font-weight: 600;
+			cursor: pointer;
+			border: none;
+			transition: transform 0.2s, box-shadow 0.2s;
+		}
+		.btn-primary {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+		}
+		.btn-primary:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+		}
+		.btn-secondary {
+			background: #f5f5f5;
+			color: #666;
+			text-decoration: none;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.btn-secondary:hover {
+			background: #e0e0e0;
+		}
+		.image-preview {
+			margin-top: 10px;
+			max-width: 200px;
+			border-radius: 8px;
+			border: 2px solid #e0e0e0;
+		}
+	</style>
+	
+	<div class="form-container">
+		if errorMsg != "" {
+			<div class="error">{ errorMsg }</div>
+		}
+		
+		if isEdit {
+			<form method="POST" action={ templ.URL(fmt.Sprintf("/admin/puzzles/%d", puzzle.ID)) } enctype="multipart/form-data">
+				@PuzzleFormFields(puzzle, isEdit)
+			</form>
+		} else {
+			<form method="POST" action="/admin/puzzles" enctype="multipart/form-data">
+				@PuzzleFormFields(puzzle, isEdit)
+			</form>
+		}
+	</div>
+}
+
+templ PuzzleFormFields(puzzle *models.Puzzle, isEdit bool) {
+	<div class="form-group">
+		<label for="name">
+			Puzzle Name
+			<span class="label-hint">A friendly name for your puzzle</span>
+		</label>
+		if puzzle != nil {
+			<input type="text" id="name" name="name" required value={ puzzle.Name } placeholder="Summer Sale 2025"/>
+		} else {
+			<input type="text" id="name" name="name" required placeholder="Summer Sale 2025"/>
+		}
+	</div>
+	
+	<div class="form-group">
+		<label for="slug">
+			URL Slug
+			<span class="label-hint">Used in puzzle URL</span>
+		</label>
+		if puzzle != nil {
+			<input type="text" id="slug" name="slug" required value={ puzzle.Slug } placeholder="summer-sale-2025" pattern="[a-z0-9-]+"/>
+		} else {
+			<input type="text" id="slug" name="slug" required placeholder="summer-sale-2025" pattern="[a-z0-9-]+"/>
+		}
+		<div class="hint">Only lowercase letters, numbers, and hyphens</div>
+	</div>
+	
+	<div class="form-group">
+		<label for="image">
+			Puzzle Image
+			<span class="label-hint">PNG format recommended</span>
+		</label>
+		<input 
+			type="file" 
+			id="image" 
+			name="image" 
+			accept="image/png,image/jpeg,image/jpg"
+			if !isEdit {
+				required
+			}
+		/>
+		if isEdit && puzzle != nil && puzzle.ImagePath != "" {
+			<img src={ puzzle.ImagePath } alt="Current image" class="image-preview"/>
+			<div class="hint">Leave empty to keep current image</div>
+		}
+	</div>
+	
+	<div class="form-row">
+		<div class="form-group">
+			<label for="grid_size">Grid Size</label>
+			<select id="grid_size" name="grid_size" required>
+				<option value="3" selected?={ puzzle == nil || puzzle.GridSize == 3 }>3x3 (Easy)</option>
+				<option value="4" selected?={ puzzle != nil && puzzle.GridSize == 4 }>4x4 (Medium)</option>
+				<option value="5" selected?={ puzzle != nil && puzzle.GridSize == 5 }>5x5 (Hard)</option>
+			</select>
+		</div>
+		
+		<div class="form-group">
+			<label for="discount_percent">Discount %</label>
+			if puzzle != nil {
+				<input type="number" id="discount_percent" name="discount_percent" required min="0" max="100" value={ fmt.Sprintf("%d", puzzle.DiscountPercent) }/>
+			} else {
+				<input type="number" id="discount_percent" name="discount_percent" required min="0" max="100" value="15"/>
+			}
+		</div>
+	</div>
+	
+	<div class="form-row">
+		<div class="form-group">
+			<label for="time_limit">Time Limit (seconds)</label>
+			if puzzle != nil {
+				<input type="number" id="time_limit" name="time_limit" required min="0" value={ fmt.Sprintf("%d", puzzle.TimeLimit) }/>
+			} else {
+				<input type="number" id="time_limit" name="time_limit" required min="0" value="90"/>
+			}
+			<div class="hint">0 = no time limit</div>
+		</div>
+		
+		<div class="form-group">
+			<label for="timer_mode">Timer Mode</label>
+			<select id="timer_mode" name="timer_mode" required>
+				<option value="immediate" selected?={ puzzle == nil || puzzle.TimerMode == "immediate" }>Start Immediately</option>
+				<option value="first_move" selected?={ puzzle != nil && puzzle.TimerMode == "first_move" }>Start on First Move</option>
+				<option value="countdown" selected?={ puzzle != nil && puzzle.TimerMode == "countdown" }>Countdown</option>
+			</select>
+		</div>
+	</div>
+	
+	<div class="form-row">
+		<div class="form-group">
+			<label for="scramble_moves">Scramble Moves</label>
+			if puzzle != nil {
+				<input type="number" id="scramble_moves" name="scramble_moves" required min="5" max="100" value={ fmt.Sprintf("%d", puzzle.ScrambleMoves) }/>
+			} else {
+				<input type="number" id="scramble_moves" name="scramble_moves" required min="5" max="100" value="25"/>
+			}
+			<div class="hint">Number of random moves</div>
+		</div>
+		
+		<div class="form-group">
+			<label for="auto_solve_speed">Auto-Solve Speed (ms)</label>
+			if puzzle != nil {
+				<input type="number" id="auto_solve_speed" name="auto_solve_speed" required min="10" max="1000" value={ fmt.Sprintf("%d", puzzle.AutoSolveSpeed) }/>
+			} else {
+				<input type="number" id="auto_solve_speed" name="auto_solve_speed" required min="10" max="1000" value="50"/>
+			}
+		</div>
+	</div>
+	
+	<div class="form-group">
+		<div class="checkbox-group">
+			<input 
+				type="checkbox" 
+				id="is_active" 
+				name="is_active" 
+				value="true"
+				checked?={ puzzle == nil || puzzle.IsActive }
+			/>
+			<label for="is_active" style="margin-bottom: 0;">Active (visible to users)</label>
+		</div>
+	</div>
+	
+	<div class="form-actions">
+		<button type="submit" class="btn btn-primary">
+			if isEdit {
+				Save Changes
+			} else {
+				Create Puzzle
+			}
+		</button>
+		<a href="/admin" class="btn btn-secondary">Cancel</a>
+	</div>
+}

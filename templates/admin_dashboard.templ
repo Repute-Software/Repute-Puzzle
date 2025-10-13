@@ -1,0 +1,200 @@
+package templates
+
+import "puzzle/models"
+import "fmt"
+
+templ AdminDashboard(companyName string, userEmail string, puzzles []models.Puzzle) {
+	@AdminLayout("Dashboard", companyName, userEmail) {
+		<div class="page-header">
+			<h2 class="page-title">Your Puzzles</h2>
+			<p class="page-subtitle">Create and manage interactive puzzles for your customers</p>
+		</div>
+		
+		<style>
+			.action-bar {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-bottom: 20px;
+			}
+			.create-btn {
+				padding: 12px 24px;
+				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				color: white;
+				text-decoration: none;
+				border-radius: 8px;
+				font-weight: 600;
+				transition: transform 0.2s, box-shadow 0.2s;
+				display: inline-block;
+			}
+			.create-btn:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+			}
+			.puzzles-table {
+				background: white;
+				border-radius: 12px;
+				overflow: hidden;
+				box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+			}
+			th {
+				background: #f8f9fa;
+				padding: 16px;
+				text-align: left;
+				font-weight: 600;
+				color: #333;
+				font-size: 14px;
+				text-transform: uppercase;
+				letter-spacing: 0.5px;
+			}
+			td {
+				padding: 16px;
+				border-top: 1px solid #e9ecef;
+				color: #555;
+			}
+			.puzzle-name {
+				font-weight: 600;
+				color: #333;
+				font-size: 16px;
+			}
+			.puzzle-slug {
+				color: #999;
+				font-size: 13px;
+				font-family: monospace;
+			}
+			.status-badge {
+				display: inline-block;
+				padding: 4px 12px;
+				border-radius: 12px;
+				font-size: 12px;
+				font-weight: 600;
+			}
+			.status-active {
+				background: #d4edda;
+				color: #155724;
+			}
+			.status-inactive {
+				background: #f8d7da;
+				color: #721c24;
+			}
+			.actions {
+				display: flex;
+				gap: 10px;
+			}
+			.btn {
+				padding: 6px 12px;
+				text-decoration: none;
+				border-radius: 6px;
+				font-size: 13px;
+				font-weight: 500;
+				transition: opacity 0.2s;
+			}
+			.btn:hover {
+				opacity: 0.8;
+			}
+			.btn-view {
+				background: #e3f2fd;
+				color: #1976d2;
+			}
+			.btn-edit {
+				background: #fff3e0;
+				color: #f57c00;
+			}
+			.btn-delete {
+				background: #ffebee;
+				color: #c62828;
+			}
+			.empty-state {
+				text-align: center;
+				padding: 60px 20px;
+				color: #999;
+			}
+			.empty-state-icon {
+				font-size: 64px;
+				margin-bottom: 20px;
+			}
+			.empty-state-title {
+				font-size: 24px;
+				color: #333;
+				margin-bottom: 10px;
+			}
+			.empty-state-text {
+				font-size: 16px;
+				margin-bottom: 30px;
+			}
+			.grid-badge {
+				background: #e8eaf6;
+				color: #3f51b5;
+				padding: 2px 8px;
+				border-radius: 4px;
+				font-size: 12px;
+				font-weight: 600;
+			}
+		</style>
+		
+		<div class="action-bar">
+			<div></div>
+			<a href="/admin/puzzles/new" class="create-btn">+ Create New Puzzle</a>
+		</div>
+		
+		if len(puzzles) == 0 {
+			<div class="puzzles-table">
+				<div class="empty-state">
+					<div class="empty-state-icon">🧩</div>
+					<h3 class="empty-state-title">No puzzles yet</h3>
+					<p class="empty-state-text">Create your first puzzle to get started!</p>
+					<a href="/admin/puzzles/new" class="create-btn">Create Your First Puzzle</a>
+				</div>
+			</div>
+		} else {
+			<div class="puzzles-table">
+				<table>
+					<thead>
+						<tr>
+							<th>Puzzle Name</th>
+							<th>Grid Size</th>
+							<th>Discount</th>
+							<th>Status</th>
+							<th>Created</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						for _, puzzle := range puzzles {
+							<tr>
+								<td>
+									<div class="puzzle-name">{ puzzle.Name }</div>
+									<div class="puzzle-slug">{ puzzle.Slug }</div>
+								</td>
+								<td>
+									<span class="grid-badge">{ fmt.Sprintf("%dx%d", puzzle.GridSize, puzzle.GridSize) }</span>
+								</td>
+								<td>{ fmt.Sprintf("%d%%", puzzle.DiscountPercent) }</td>
+								<td>
+									if puzzle.IsActive {
+										<span class="status-badge status-active">Active</span>
+									} else {
+										<span class="status-badge status-inactive">Inactive</span>
+									}
+								</td>
+								<td>{ puzzle.CreatedAt.Format("Jan 2, 2006") }</td>
+								<td>
+									<div class="actions">
+										<a href={ templ.URL(fmt.Sprintf("/admin/puzzles/%d", puzzle.ID)) } class="btn btn-view">View</a>
+										<a href={ templ.URL(fmt.Sprintf("/admin/puzzles/%d/edit", puzzle.ID)) } class="btn btn-edit">Edit</a>
+										<a href={ templ.URL(fmt.Sprintf("/admin/puzzles/%d/delete", puzzle.ID)) } class="btn btn-delete" onclick="return confirm('Delete this puzzle?')">Delete</a>
+									</div>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		}
+	}
+}
+
