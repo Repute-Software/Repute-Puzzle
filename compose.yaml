@@ -6,7 +6,7 @@ services:
       - "8080:8080"
     volumes:
       # Mount images directory so operator can add PNG files
-      - ./images:/app/images:ro
+      - ./images:/app/images
       # Mount data directory for database persistence
       - ./data:/app/data
       # Mount logs directory for crash dumps

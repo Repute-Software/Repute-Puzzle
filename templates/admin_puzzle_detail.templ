@@ -243,7 +243,7 @@ templ AdminPuzzleDetail(companyName string, userEmail string, puzzle *models.Puz
 				<p style="color: #666; margin-bottom: 16px;">Copy this code to embed the puzzle on your website:</p>
 				<div class="code-block">
 					<button class="copy-btn" onclick="copyEmbedCode()">Copy</button>
-					<pre id="embed-code">{ fmt.Sprintf(`<iframe src="https://yoursite.com/embed/%s/%s" width="600" height="700" frameborder="0"></iframe>`, company.Slug, puzzle.Slug) }</pre>
+					<pre id="embed-code">{ fmt.Sprintf(`<iframe src="https://staging-puzzle.repute-software.com/embed/%s/%s" width="600" height="700" frameborder="0"></iframe>`, company.Slug, puzzle.Slug) }</pre>
 				</div>
 				<div class="test-links">
 					<strong>Test Links:</strong><br/><br/>
