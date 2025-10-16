@@ -1,7 +1,7 @@
 services:
   puzzle:
     build: .
-    container_name: sliding-puzzle
+    container_name: sliding-puzzle-staging
     ports:
       - "8080:8080"
     volumes:
