@@ -138,6 +138,41 @@ templ PuzzleForm(puzzle *models.Puzzle, errorMsg string, isEdit bool) {
 			border-radius: 8px;
 			border: 2px solid #e0e0e0;
 		}
+		.form-section {
+			margin: 40px 0;
+			padding: 30px;
+			background: #f8f9fa;
+			border-radius: 12px;
+			border: 1px solid #e0e0e0;
+		}
+		.section-title {
+			color: #333;
+			font-size: 1.3rem;
+			font-weight: 600;
+			margin-bottom: 8px;
+		}
+		.section-subtitle {
+			color: #666;
+			font-size: 14px;
+			margin-bottom: 25px;
+		}
+		.color-input-group {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+		}
+		.color-input-group input[type="color"] {
+			width: 50px;
+			height: 40px;
+			border: 2px solid #e0e0e0;
+			border-radius: 6px;
+			cursor: pointer;
+			padding: 0;
+		}
+		.color-input-group input[type="text"] {
+			flex: 1;
+			font-family: 'Courier New', monospace;
+		}
 	</style>
 	
 	<div class="form-container">
@@ -298,6 +333,108 @@ templ PuzzleFormFields(puzzle *models.Puzzle, isEdit bool) {
 				checked?={ puzzle == nil || puzzle.IsActive }
 			/>
 			<label for="is_active" style="margin-bottom: 0;">Active (visible to users)</label>
+		</div>
+	</div>
+	
+	<!-- Theme Customization Section -->
+	<div class="form-section">
+		<h3 class="section-title">Theme Customization</h3>
+		<p class="section-subtitle">Customize the colors for your puzzle theme</p>
+		
+		<div class="form-row">
+			<div class="form-group">
+				<label for="tile_color">
+					Tile Color
+					<span class="label-hint">Main puzzle tile color</span>
+				</label>
+				<div class="color-input-group">
+					if puzzle != nil && puzzle.TileColor != "" {
+						<input type="color" id="tile_color" name="tile_color" value={ puzzle.TileColor }/>
+					} else {
+						<input type="color" id="tile_color" name="tile_color" value="#667eea"/>
+					}
+					<input type="text" id="tile_color_hex" placeholder="#667eea" pattern="^#[0-9A-Fa-f]{6}$" title="Enter a valid hex color code"/>
+				</div>
+			</div>
+			
+			<div class="form-group">
+				<label for="tile_hover_color">
+					Tile Hover Color
+					<span class="label-hint">Color when hovering over tiles</span>
+				</label>
+				<div class="color-input-group">
+					if puzzle != nil && puzzle.TileHoverColor != "" {
+						<input type="color" id="tile_hover_color" name="tile_hover_color" value={ puzzle.TileHoverColor }/>
+					} else {
+						<input type="color" id="tile_hover_color" name="tile_hover_color" value="#5568d3"/>
+					}
+					<input type="text" id="tile_hover_color_hex" placeholder="#5568d3" pattern="^#[0-9A-Fa-f]{6}$" title="Enter a valid hex color code"/>
+				</div>
+			</div>
+		</div>
+		
+		<div class="form-row">
+			<div class="form-group">
+				<label for="background_color">
+					Background Color
+					<span class="label-hint">Page background color or gradient</span>
+				</label>
+				<div class="color-input-group">
+					if puzzle != nil && puzzle.BackgroundColor != "" {
+						<input type="color" id="background_color" name="background_color" value="#667eea"/>
+					} else {
+						<input type="color" id="background_color" name="background_color" value="#667eea"/>
+					}
+					<input type="text" id="background_color_hex" placeholder="linear-gradient(135deg, #667eea 0%, #764ba2 100%)" title="Enter a color or CSS gradient"/>
+				</div>
+			</div>
+			
+			<div class="form-group">
+				<label for="text_color">
+					Text Color
+					<span class="label-hint">Main text color</span>
+				</label>
+				<div class="color-input-group">
+					if puzzle != nil && puzzle.TextColor != "" {
+						<input type="color" id="text_color" name="text_color" value={ puzzle.TextColor }/>
+					} else {
+						<input type="color" id="text_color" name="text_color" value="#333333"/>
+					}
+					<input type="text" id="text_color_hex" placeholder="#333333" pattern="^#[0-9A-Fa-f]{6}$" title="Enter a valid hex color code"/>
+				</div>
+			</div>
+		</div>
+		
+		<div class="form-row">
+			<div class="form-group">
+				<label for="button_text_color">
+					Button Text Color
+					<span class="label-hint">Text color for buttons</span>
+				</label>
+				<div class="color-input-group">
+					if puzzle != nil && puzzle.ButtonTextColor != "" {
+						<input type="color" id="button_text_color" name="button_text_color" value={ puzzle.ButtonTextColor }/>
+					} else {
+						<input type="color" id="button_text_color" name="button_text_color" value="#ffffff"/>
+					}
+					<input type="text" id="button_text_color_hex" placeholder="#ffffff" pattern="^#[0-9A-Fa-f]{6}$" title="Enter a valid hex color code"/>
+				</div>
+			</div>
+			
+			<div class="form-group">
+				<label for="border_color">
+					Border Color
+					<span class="label-hint">Border color for puzzle grid</span>
+				</label>
+				<div class="color-input-group">
+					if puzzle != nil && puzzle.BorderColor != "" {
+						<input type="color" id="border_color" name="border_color" value={ puzzle.BorderColor }/>
+					} else {
+						<input type="color" id="border_color" name="border_color" value="#333333"/>
+					}
+					<input type="text" id="border_color_hex" placeholder="#333333" pattern="^#[0-9A-Fa-f]{6}$" title="Enter a valid hex color code"/>
+				</div>
+			</div>
 		</div>
 	</div>
 	

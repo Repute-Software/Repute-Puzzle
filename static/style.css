@@ -1,6 +1,10 @@
 :root {
     --primary-color: #667eea;
     --primary-hover: #5568d3;
+    --background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --text-color: #333333;
+    --button-text-color: #ffffff;
+    --border-color: #333333;
 }
 
 * {
@@ -11,7 +15,7 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+    background: var(--background-color);
     min-height: 100vh;
     display: flex;
     justify-content: center;
@@ -37,13 +41,14 @@ body {
 }
 
 .game-header h1 {
-    color: #333;
+    color: var(--text-color);
     font-size: 2.5rem;
     margin-bottom: 10px;
 }
 
 .game-header p {
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.8;
     font-size: 1.1rem;
     margin-bottom: 15px;
 }
@@ -92,13 +97,14 @@ body {
 }
 
 .stat-label {
-    color: #666;
+    color: var(--text-color);
+    opacity: 0.8;
     font-size: 0.9rem;
     margin-bottom: 5px;
 }
 
 .stat-value {
-    color: #667eea;
+    color: var(--primary-color);
     font-size: 1.8rem;
     font-weight: bold;
 }
@@ -106,7 +112,7 @@ body {
 .puzzle-grid {
     display: grid;
     gap: 2px;
-    background: #333;
+    background: var(--border-color);
     padding: 2px;
     border-radius: 10px;
     margin: 0 auto 30px;
@@ -189,7 +195,7 @@ body {
 
 .btn-primary {
     background: var(--primary-color);
-    color: white;
+    color: var(--button-text-color);
 }
 
 .btn-primary:hover {
@@ -200,7 +206,7 @@ body {
 
 .btn-secondary {
     background: #f0f0f0;
-    color: #333;
+    color: var(--text-color);
 }
 
 .btn-secondary:hover {
@@ -209,7 +215,7 @@ body {
 
 .btn-success {
     background: #4caf50;
-    color: white;
+    color: var(--button-text-color);
 }
 
 .btn-success:hover {
@@ -259,7 +265,7 @@ form .btn-success {
 }
 
 .modal-content h2 {
-    color: #333;
+    color: var(--text-color);
     margin-bottom: 15px;
 }
 
@@ -279,7 +285,7 @@ form .btn-success {
 .form-group label {
     display: block;
     margin-bottom: 10px;
-    color: #333;
+    color: var(--text-color);
     font-weight: 500;
 }
 
@@ -322,7 +328,7 @@ form .btn-success {
 
 .discount-info {
     font-size: 1.2rem;
-    color: #333;
+    color: var(--text-color);
     margin: 15px 0;
 }
 
@@ -381,13 +387,13 @@ form .btn-success {
 }
 
 .discount-code-section h3 {
-    color: #333;
+    color: var(--text-color);
     font-size: 1.5rem;
     margin-bottom: 15px;
 }
 
 .discount-code-display {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--background-color);
     padding: 25px;
     border-radius: 12px;
     margin: 20px 0;
@@ -397,14 +403,14 @@ form .btn-success {
 .discount-code-display code {
     font-size: 2rem;
     font-weight: 700;
-    color: white;
+    color: var(--button-text-color);
     letter-spacing: 2px;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .discount-info {
     font-size: 1.2rem;
-    color: #667eea;
+    color: var(--primary-color);
     font-weight: 600;
     margin: 10px 0;
 }
@@ -415,7 +421,7 @@ form .btn-success {
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 20px;
-    border-left: 4px solid #667eea;
+    border-left: 4px solid var(--primary-color);
 }
 
 .instructions-section .save-info {
@@ -527,14 +533,14 @@ body:has(.embed-mode) {
 
 /* Use primary color in gradients */
 .modal-content h2 {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+    background: var(--background-color);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
 .discount-code-section {
-    background: linear-gradient(135deg, var(--primary-color) 0%, #764ba2 100%);
+    background: var(--background-color);
 }
 
 .stat-value {

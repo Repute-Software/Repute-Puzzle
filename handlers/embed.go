@@ -71,6 +71,12 @@ func (h *EmbedHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		lang,
 		primaryColor,
 		"/complete", // Old route uses /complete
+		"#667eea",   // Default tile color
+		"#5568d3",   // Default tile hover color
+		"linear-gradient(135deg, #667eea 0%, #764ba2 100%)", // Default background
+		"#333333", // Default text color
+		"#ffffff", // Default button text color
+		"#333333", // Default border color
 	)
 
 	if err := component.Render(r.Context(), w); err != nil {
@@ -154,6 +160,12 @@ func (h *EmbedHandler) ServeEmbedForPuzzle(w http.ResponseWriter, r *http.Reques
 		lang,
 		primaryColor,
 		completionURL,
+		puzzle.TileColor,
+		puzzle.TileHoverColor,
+		puzzle.BackgroundColor,
+		puzzle.TextColor,
+		puzzle.ButtonTextColor,
+		puzzle.BorderColor,
 	)
 
 	if err := component.Render(r.Context(), w); err != nil {

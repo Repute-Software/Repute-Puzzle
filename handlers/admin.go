@@ -84,6 +84,32 @@ func (h *AdminHandler) HandleCreatePuzzle(w http.ResponseWriter, r *http.Request
 	codeExpirationDays, _ := strconv.Atoi(r.FormValue("code_expiration_days"))
 	isActive := r.FormValue("is_active") == "true"
 
+	// Extract color values with defaults
+	tileColor := strings.TrimSpace(r.FormValue("tile_color"))
+	if tileColor == "" {
+		tileColor = "#667eea"
+	}
+	tileHoverColor := strings.TrimSpace(r.FormValue("tile_hover_color"))
+	if tileHoverColor == "" {
+		tileHoverColor = "#5568d3"
+	}
+	backgroundColor := strings.TrimSpace(r.FormValue("background_color"))
+	if backgroundColor == "" {
+		backgroundColor = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+	}
+	textColor := strings.TrimSpace(r.FormValue("text_color"))
+	if textColor == "" {
+		textColor = "#333333"
+	}
+	buttonTextColor := strings.TrimSpace(r.FormValue("button_text_color"))
+	if buttonTextColor == "" {
+		buttonTextColor = "#ffffff"
+	}
+	borderColor := strings.TrimSpace(r.FormValue("border_color"))
+	if borderColor == "" {
+		borderColor = "#333333"
+	}
+
 	// Validate required fields
 	if name == "" || slug == "" {
 		http.Redirect(w, r, "/admin/puzzles/new?error=Name+and+slug+required", http.StatusSeeOther)
@@ -133,6 +159,12 @@ func (h *AdminHandler) HandleCreatePuzzle(w http.ResponseWriter, r *http.Request
 		AutoSolveSpeed:     autoSolveSpeed,
 		TestingMode:        testingMode,
 		CodeExpirationDays: codeExpirationDays,
+		TileColor:          tileColor,
+		TileHoverColor:     tileHoverColor,
+		BackgroundColor:    backgroundColor,
+		TextColor:          textColor,
+		ButtonTextColor:    buttonTextColor,
+		BorderColor:        borderColor,
 		IsActive:           isActive,
 	}
 
@@ -278,6 +310,44 @@ func (h *AdminHandler) HandleUpdatePuzzle(w http.ResponseWriter, r *http.Request
 	puzzle.TestingMode = r.FormValue("testing_mode") == "true"
 	puzzle.CodeExpirationDays, _ = strconv.Atoi(r.FormValue("code_expiration_days"))
 	puzzle.IsActive = r.FormValue("is_active") == "true"
+
+	// Update color fields with defaults if empty
+	tileColor := strings.TrimSpace(r.FormValue("tile_color"))
+	if tileColor != "" {
+		puzzle.TileColor = tileColor
+	} else {
+		puzzle.TileColor = "#667eea"
+	}
+	tileHoverColor := strings.TrimSpace(r.FormValue("tile_hover_color"))
+	if tileHoverColor != "" {
+		puzzle.TileHoverColor = tileHoverColor
+	} else {
+		puzzle.TileHoverColor = "#5568d3"
+	}
+	backgroundColor := strings.TrimSpace(r.FormValue("background_color"))
+	if backgroundColor != "" {
+		puzzle.BackgroundColor = backgroundColor
+	} else {
+		puzzle.BackgroundColor = "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+	}
+	textColor := strings.TrimSpace(r.FormValue("text_color"))
+	if textColor != "" {
+		puzzle.TextColor = textColor
+	} else {
+		puzzle.TextColor = "#333333"
+	}
+	buttonTextColor := strings.TrimSpace(r.FormValue("button_text_color"))
+	if buttonTextColor != "" {
+		puzzle.ButtonTextColor = buttonTextColor
+	} else {
+		puzzle.ButtonTextColor = "#ffffff"
+	}
+	borderColor := strings.TrimSpace(r.FormValue("border_color"))
+	if borderColor != "" {
+		puzzle.BorderColor = borderColor
+	} else {
+		puzzle.BorderColor = "#333333"
+	}
 
 	// Handle image upload if provided
 	file, header, err := r.FormFile("image")

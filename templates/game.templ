@@ -5,9 +5,15 @@ import (
 	"puzzle/models"
 )
 
-templ Game(gridSize int, imageURL string, timeLimit int, timerMode string, countdownTime int, testingMode bool, scrambleMoves int, autoSolveSpeed int, t *models.Translations, lang string, completionURL string) {
+templ Game(gridSize int, imageURL string, timeLimit int, timerMode string, countdownTime int, testingMode bool, scrambleMoves int, autoSolveSpeed int, t *models.Translations, lang string, completionURL string, tileColor string, tileHoverColor string, backgroundColor string, textColor string, buttonTextColor string, borderColor string) {
 	@Layout(t.Game.Title) {
-		<div class="game-container">
+		<div class="game-container" 
+			 data-tile-color={ tileColor }
+			 data-tile-hover-color={ tileHoverColor }
+			 data-background-color={ backgroundColor }
+			 data-text-color={ textColor }
+			 data-button-text-color={ buttonTextColor }
+			 data-border-color={ borderColor }>
 			<div class="game-header">
 				<h1>{ t.Game.Title }</h1>
 				<p>{ t.Game.Subtitle }</p>

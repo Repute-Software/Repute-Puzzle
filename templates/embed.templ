@@ -5,9 +5,17 @@ import (
 	"puzzle/models"
 )
 
-templ Embed(gridSize int, imageURL string, timeLimit int, timerMode string, countdownTime int, testingMode bool, scrambleMoves int, autoSolveSpeed int, t *models.Translations, lang string, primaryColor string, completionURL string) {
+templ Embed(gridSize int, imageURL string, timeLimit int, timerMode string, countdownTime int, testingMode bool, scrambleMoves int, autoSolveSpeed int, t *models.Translations, lang string, primaryColor string, completionURL string, tileColor string, tileHoverColor string, backgroundColor string, textColor string, buttonTextColor string, borderColor string) {
 	@Layout(t.Game.Title) {
-		<div class="game-container embed-mode" data-embed="true" data-primary-color={ primaryColor }>
+		<div class="game-container embed-mode" 
+			 data-embed="true" 
+			 data-primary-color={ primaryColor }
+			 data-tile-color={ tileColor }
+			 data-tile-hover-color={ tileHoverColor }
+			 data-background-color={ backgroundColor }
+			 data-text-color={ textColor }
+			 data-button-text-color={ buttonTextColor }
+			 data-border-color={ borderColor }>
 			<div class="game-stats">
 				<div class="stat">
 					<span class="stat-label">{ t.Game.Moves }:</span>

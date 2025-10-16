@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('puzzle-container');
     if (!container) return;
 
+    const gameContainer = document.querySelector('.game-container');
+    if (!gameContainer) return;
+
     gameState.gridSize = parseInt(container.dataset.gridSize);
     gameState.imageUrl = container.dataset.imageUrl;
     gameState.timeLimit = parseInt(container.dataset.timeLimit);
@@ -32,6 +35,9 @@ document.addEventListener('DOMContentLoaded', function() {
     gameState.testingMode = container.dataset.testingMode === 'true';
     gameState.scrambleMovesCount = parseInt(container.dataset.scrambleMoves);
     gameState.autoSolveSpeed = parseInt(container.dataset.autoSolveSpeed);
+
+    // Apply dynamic colors from data attributes
+    applyDynamicColors(gameContainer);
 
     initializePuzzle();
     
@@ -406,5 +412,51 @@ function showHint() {
     setTimeout(() => {
         tiles.forEach(tile => tile.classList.remove('correct'));
     }, 2000);
+}
+
+// Apply dynamic colors from data attributes
+function applyDynamicColors(container) {
+    const root = document.documentElement;
+    
+    // Get color values from data attributes
+    const tileColor = container.dataset.tileColor || '#667eea';
+    const tileHoverColor = container.dataset.tileHoverColor || '#5568d3';
+    const backgroundColor = container.dataset.backgroundColor || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+    const textColor = container.dataset.textColor || '#333333';
+    const buttonTextColor = container.dataset.buttonTextColor || '#ffffff';
+    const borderColor = container.dataset.borderColor || '#333333';
+    
+    // Apply CSS custom properties
+    root.style.setProperty('--primary-color', tileColor);
+    root.style.setProperty('--primary-hover', tileHoverColor);
+    root.style.setProperty('--background-color', backgroundColor);
+    root.style.setProperty('--text-color', textColor);
+    root.style.setProperty('--button-text-color', buttonTextColor);
+    root.style.setProperty('--border-color', borderColor);
+    
+    // Apply background color to body if it's a gradient or solid color
+    if (backgroundColor.includes('gradient')) {
+        document.body.style.background = backgroundColor;
+    } else {
+        document.body.style.background = backgroundColor;
+    }
+    
+    // Apply text color to relevant elements
+    const textElements = document.querySelectorAll('h1, h2, h3, p, .stat-label, .stat-value');
+    textElements.forEach(el => {
+        el.style.color = textColor;
+    });
+    
+    // Apply button text color
+    const buttons = document.querySelectorAll('.btn');
+    buttons.forEach(btn => {
+        btn.style.color = buttonTextColor;
+    });
+    
+    // Apply border color to puzzle grid
+    const puzzleGrid = document.querySelector('.puzzle-grid');
+    if (puzzleGrid) {
+        puzzleGrid.style.borderColor = borderColor;
+    }
 }
 
