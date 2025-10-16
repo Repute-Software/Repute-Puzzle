@@ -39,6 +39,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Apply dynamic colors from data attributes
     applyDynamicColors(gameContainer);
 
+    // Add resize listener to adjust puzzle scaling
+    window.addEventListener('resize', adjustPuzzleScaling);
+
     initializePuzzle();
     
     // Set up button listeners
@@ -457,6 +460,14 @@ function applyDynamicColors(container) {
     const puzzleGrid = document.querySelector('.puzzle-grid');
     if (puzzleGrid) {
         puzzleGrid.style.borderColor = borderColor;
+    }
+}
+
+// Adjust puzzle scaling on window resize
+function adjustPuzzleScaling() {
+    // Re-render the puzzle to adjust background sizes
+    if (gameState.tiles && gameState.tiles.length > 0) {
+        renderPuzzle();
     }
 }
 
