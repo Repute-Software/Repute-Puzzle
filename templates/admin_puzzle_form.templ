@@ -173,6 +173,79 @@ templ PuzzleForm(puzzle *models.Puzzle, errorMsg string, isEdit bool) {
 			flex: 1;
 			font-family: 'Courier New', monospace;
 		}
+		.theme-editor-container {
+			display: flex;
+			gap: 30px;
+			align-items: flex-start;
+		}
+		.color-controls {
+			flex: 1;
+		}
+		.color-preview {
+			flex: 1;
+			min-width: 300px;
+		}
+		.preview-box {
+			background: white;
+			border: 2px solid #e0e0e0;
+			border-radius: 12px;
+			padding: 20px;
+			text-align: center;
+		}
+		.preview-puzzle-grid {
+			display: grid;
+			grid-template-columns: repeat(3, 1fr);
+			gap: 2px;
+			background: #333333;
+			padding: 2px;
+			border-radius: 8px;
+			margin: 0 auto 15px;
+			width: 150px;
+			aspect-ratio: 1;
+		}
+		.preview-tile {
+			background: #667eea;
+			border-radius: 4px;
+			aspect-ratio: 1;
+			transition: background-color 0.2s;
+		}
+		.preview-tile:hover {
+			background: #5568d3;
+		}
+		.preview-buttons {
+			display: flex;
+			gap: 10px;
+			justify-content: center;
+		}
+		.preview-btn {
+			padding: 8px 16px;
+			border: none;
+			border-radius: 6px;
+			font-size: 14px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: transform 0.2s;
+		}
+		.preview-btn:hover {
+			transform: translateY(-1px);
+		}
+		.preview-btn-primary {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: #ffffff;
+		}
+		.preview-btn-secondary {
+			background: #f5f5f5;
+			color: #666;
+		}
+		@media (max-width: 768px) {
+			.theme-editor-container {
+				flex-direction: column;
+				gap: 20px;
+			}
+			.color-preview {
+				min-width: auto;
+			}
+		}
 	</style>
 	
 	<div class="form-container">
@@ -341,7 +414,9 @@ templ PuzzleFormFields(puzzle *models.Puzzle, isEdit bool) {
 		<h3 class="section-title">Theme Customization</h3>
 		<p class="section-subtitle">Customize the colors for your puzzle theme</p>
 		
-		<div class="form-row">
+		<div class="theme-editor-container">
+			<div class="color-controls">
+				<div class="form-row">
 			<div class="form-group">
 				<label for="tile_color">
 					Tile Color
@@ -436,6 +511,28 @@ templ PuzzleFormFields(puzzle *models.Puzzle, isEdit bool) {
 				</div>
 			</div>
 		</div>
+		</div>
+		
+		<div class="color-preview">
+			<h4 style="margin: 0 0 15px 0; color: #333; font-size: 1.1rem;">Live Preview</h4>
+			<div class="preview-box" id="preview-box">
+				<div class="preview-puzzle-grid">
+					<div class="preview-tile"></div>
+					<div class="preview-tile"></div>
+					<div class="preview-tile"></div>
+					<div class="preview-tile"></div>
+					<div class="preview-tile"></div>
+					<div class="preview-tile"></div>
+					<div class="preview-tile"></div>
+					<div class="preview-tile"></div>
+					<div class="preview-tile"></div>
+				</div>
+				<div class="preview-buttons">
+					<button type="button" class="preview-btn preview-btn-primary">Shuffle</button>
+					<button type="button" class="preview-btn preview-btn-secondary">Hint</button>
+				</div>
+			</div>
+		</div>
 	</div>
 	
 	<div class="form-actions">
@@ -447,5 +544,96 @@ templ PuzzleFormFields(puzzle *models.Puzzle, isEdit bool) {
 			}
 		</button>
 		<a href="/admin" class="btn btn-secondary">Cancel</a>
+	</div>
+	
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			const previewBox = document.getElementById('preview-box');
+			const colorInputs = [
+				{ color: 'tile_color', hex: 'tile_color_hex', cssVar: '--primary-color' },
+				{ color: 'tile_hover_color', hex: 'tile_hover_color_hex', cssVar: '--primary-hover' },
+				{ color: 'background_color', hex: 'background_color_hex', cssVar: '--background-color' },
+				{ color: 'text_color', hex: 'text_color_hex', cssVar: '--text-color' },
+				{ color: 'button_text_color', hex: 'button_text_color_hex', cssVar: '--button-text-color' },
+				{ color: 'border_color', hex: 'border_color_hex', cssVar: '--border-color' }
+			];
+			
+			// Initialize preview with current values
+			updatePreview();
+			
+			// Set up bidirectional sync and real-time updates
+			colorInputs.forEach(input => {
+				const colorPicker = document.getElementById(input.color);
+				const hexInput = document.getElementById(input.hex);
+				
+				if (colorPicker && hexInput) {
+					// Sync color picker to hex input
+					colorPicker.addEventListener('input', function() {
+						hexInput.value = this.value;
+						updatePreview();
+					});
+					
+					// Sync hex input to color picker
+					hexInput.addEventListener('input', function() {
+						if (this.value.match(/^#[0-9A-Fa-f]{6}$/)) {
+							colorPicker.value = this.value;
+							updatePreview();
+						}
+					});
+					
+					// Update preview on hex input blur (for gradients)
+					hexInput.addEventListener('blur', function() {
+						updatePreview();
+					});
+				}
+			});
+			
+			function updatePreview() {
+				// Get current color values
+				const tileColor = document.getElementById('tile_color')?.value || '#667eea';
+				const tileHoverColor = document.getElementById('tile_hover_color')?.value || '#5568d3';
+				const backgroundColor = document.getElementById('background_color_hex')?.value || 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+				const textColor = document.getElementById('text_color')?.value || '#333333';
+				const buttonTextColor = document.getElementById('button_text_color')?.value || '#ffffff';
+				const borderColor = document.getElementById('border_color')?.value || '#333333';
+				
+				// Apply colors to preview
+				previewBox.style.setProperty('--primary-color', tileColor);
+				previewBox.style.setProperty('--primary-hover', tileHoverColor);
+				previewBox.style.setProperty('--background-color', backgroundColor);
+				previewBox.style.setProperty('--text-color', textColor);
+				previewBox.style.setProperty('--button-text-color', buttonTextColor);
+				previewBox.style.setProperty('--border-color', borderColor);
+				
+				// Apply background to preview box
+				previewBox.style.background = backgroundColor;
+				
+				// Apply colors to preview tiles
+				const previewTiles = previewBox.querySelectorAll('.preview-tile');
+				previewTiles.forEach(tile => {
+					tile.style.background = tileColor;
+				});
+				
+				// Apply colors to preview grid border
+				const previewGrid = previewBox.querySelector('.preview-puzzle-grid');
+				if (previewGrid) {
+					previewGrid.style.background = borderColor;
+				}
+				
+				// Apply colors to preview buttons
+				const primaryBtn = previewBox.querySelector('.preview-btn-primary');
+				const secondaryBtn = previewBox.querySelector('.preview-btn-secondary');
+				
+				if (primaryBtn) {
+					primaryBtn.style.background = `linear-gradient(135deg, ${tileColor} 0%, ${tileHoverColor} 100%)`;
+					primaryBtn.style.color = buttonTextColor;
+				}
+				
+				if (secondaryBtn) {
+					secondaryBtn.style.color = textColor;
+				}
+			}
+		});
+	</script>
 	</div>
 }
